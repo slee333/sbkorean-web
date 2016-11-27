@@ -1,0 +1,27 @@
+{
+  "name": "speech_banana_korean_web",
+  "description": "Speech Banana Web Version compatible to different languages",
+  "main": "index.js",
+  "authors": [
+    "Seung Wook Lee"
+  ],
+  "license": "SEE LICENSE IN LICENSE.md",
+  "homepage": "https://cis.jhu.edu/speechbanana/",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "^3.3.7",
+    "eonasdan-bootstrap-datetimepicker": "^4.17.43",
+    "bootstrap-toggle": "^2.2.2"
+  },
+  "keywords": [
+    "Speech",
+    "Banana"
+  ]
+}
