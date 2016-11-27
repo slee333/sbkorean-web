@@ -1,0 +1,65 @@
+<!doctype html>
+<html class="no-js" lang="">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Speech Banana Lesson</title> 
+
+    <link rel="stylesheet" href = 'components/bootstrap/dist/css/bootstrap.css'>
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <link rel="stylesheet" href = 'custom/css/lessons.css'>
+    
+
+</head>
+<body>
+
+    <div class="wrapper">
+    <div class="row row-offcanvas row-offcanvas-left">
+        <!-- sidebar -->
+        <div class="column col-sm-3 col-xs-1 sidebar-offcanvas" id="sidebar">
+            <ul class="nav" id="menu">
+                <li><a href="#"><i class="glyphicon glyphicon-home"></i> <span class="collapse in hidden-xs">Home</span></a></li>
+                <li><a href="#"><i class="glyphicon glyphicon-question-sign"></i> <span class="collapse in hidden-xs">About</span></a></li>
+                <li><a href="#"><i class="glyphicon glyphicon-paperclip"></i> <span class="collapse in hidden-xs">Saved</span></a></li>
+                <li><a href="#"><i class="glyphicon glyphicon-refresh"></i> <span class="collapse in hidden-xs">Refresh</span></a></li>
+                <li>
+                    <a href="#" data-target="#chapter-list" data-toggle="collapse"> <i class="glyphicon glyphicon-th-list"></i> 
+                    <span class="collapse in hidden-xs"> 
+                        Chapters <span class="caret"></span>
+                      </span>
+                    </a>
+
+                    <ul class="nav nav-stacked collapse left-submenu" id="chapter-list">
+                    <!-- 
+                        Chapters and Lessons kicks in
+                    -->
+                    </ul>
+
+                </li> <!-- /chapters -->
+                <li><a href="#"><i class="glyph` glyphicon-list-alt"></i> <span class="collapse in hidden-xs">Link</span></a></li>
+            </ul>
+        </div>
+        <!-- /sidebar -->
+
+        <!-- main right col -->
+        <div class="column col-sm-9 col-xs-11" id="main">
+            <p><a href="#" data-toggle="offcanvas"><i class="glyphicon glyphicon-menu-hamburger"></i></a></p>
+
+            <div class="container" id="main-container">
+                <h2 id = "main-header"></h1>
+                <div id= "main-body"></div> <!-- Where Main content kicks in -->
+            </div>
+    
+        </div>
+        <!-- /main -->
+    </div>
+</div>
+
+    <script src="http://d3js.org/d3.v3.js"></script>
+    <script src="http://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript" src= "components/bootstrap/dist/js/bootstrap.js"></script>
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+    <script type="text/javascript" src= "custom/js/lessons.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,73 @@
+html, 
+body, 
+.container,
+.scroller {
+	height: 100%;
+}
+
+.scroller {
+	overflow-y: scroll;
+}
+
+.scroller,
+.scroller-inner {
+	position: relative;
+}
+
+.container {
+	position: relative;
+	overflow: hidden;
+	background: white;
+}
+
+#trigger {
+	text-decoration: none;
+	color: white;
+	outline: none;
+	float: left;
+	height: 30px;
+}
+
+.main-header {
+	margin: 0 auto;
+	padding: 2em;
+	background: rgba(0,0,0,0.01);
+	text-align: center;
+	color: #f7f7f7;
+	background-color: #ffc526;
+}
+
+a {
+	color: #0f0f0f;
+	text-decoration: none;
+}
+
+.scroller-inner {
+	height: 100%;
+}
+
+.clearfix {
+	margin: 60px;
+}
+
+/*
+CSS for buttons
+*/
+
+.gender-btns {
+	width: 50%;
+	float: left;
+}
+
+.set-btns {
+	width: 50%;
+	float: right;
+}
+
+.button-selected {
+	background-color: #3171d8;
+}
+
+.lesson-btns {
+	cursor: pointer;
+}
