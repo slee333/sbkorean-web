@@ -71,3 +71,8 @@ CSS for buttons
 .lesson-btns {
 	cursor: pointer;
 }
+
+.about-help {
+	text-align: center;
+	margin-top: 5%;
+}
