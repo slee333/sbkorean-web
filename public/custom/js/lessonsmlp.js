@@ -193,6 +193,15 @@ var showLessonMenu = function( sentences, lessonNum ) {
 			.attr('font-size', "20px")
 			.attr('text-anchor',"middle")
 			.text(function(d,i) { return sentences[i] })
+			.on('click', function(d, i) {
+				console.log(  loadSoundFile( sentences[i] )  )
+			})
+			.on('mouseover', function(d, i) {
+				d3.select( d3.selectAll('rect')[0][i] ).style('fill','#edc01e')
+			})
+			.on('mouseout', function(d, i) {
+				d3.select( d3.selectAll('rect')[0][i] ).style('fill','#fcd549')
+			})
 
 	}
 
@@ -311,34 +320,8 @@ var loadSoundFile = function( sentenceString ) {
 	})}
 
 	loadSound(audioContext) // Using global variable audioContext defined at initialization
-	/*
-	$.ajax({
-		url: "/api/soundData",
-		type: "get",
-		data: {lesson: lessonNum, fileName: filename },
-		success: function(data) {
-
-			window.AudioContext = window.AudioContext||window.webkitAudioContext;
-  			context = new AudioContext();
-
-  			function process(Data) {
-				source = context.createBufferSource(); // Create Sound Source
-				context.decodeAudioData(Data, function(buffer){
-				    source.buffer = buffer;
-				    source.connect(context.destination); 
-				    source.start(context.currentTime);
-				}	
-			)}
-
-			process(data)
-
-		}
-	})*/
-
 
 }
-
-
 
 // When menu buttons are clicked:
 $('#about-page').on('click', function(){ 

@@ -61,7 +61,7 @@ app.get( '/',  function( req, res ) {
 app.get( '/lessons', function( req, res ) {
    res.sendFile( path.join( dir, 'public', 'lessons_mlp.html' ) ); 
 })
-
+    
 app.get( '/api/lessonData', function ( req, res) {
     getDataFile( 'Korean_lessons.json', function( jsondata ) {
         res.status(201).json(jsondata)
@@ -72,7 +72,7 @@ app.get( '/api/lessonData', function ( req, res) {
 app.get( '/api/soundData', function(req,res){
 
     var filepath = path.join("data","audio",req.query.lesson,req.query.fileName)
-
+    console.log(filepath)
     res.set({"Content-Type": "audio/mpeg"});
     var readStream = fs.createReadStream(filepath);
 
