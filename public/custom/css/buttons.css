@@ -288,8 +288,8 @@
   .button-highlight:hover, .button-highlight:focus,
   .button-highlight-flat:hover,
   .button-highlight-flat:focus {
-    background-color: #fec04e;
-    border-color: #fec04e;
+    background-color: #3171d8; /*fec04e*/
+    border-color: #3171d8; /*fec04e*/
     color: white; }
   .button-highlight:active, .button-highlight.active, .button-highlight.is-active,
   .button-highlight-flat:active,
