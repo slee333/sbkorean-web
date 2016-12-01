@@ -16,7 +16,9 @@ var korean_lessonsData = $.ajax({
 	}
 })
 
-
+// Setup global variable audioContext
+window.AudioContext = window.AudioContext||window.webkitAudioContext;
+var audioContext = new AudioContext();
 
 
 
@@ -69,7 +71,7 @@ var build_sublists = function( divid, data ){
 			})
 			.on('click', function(d, i ){
 				removeLessons()
-				showLessons( lessons[d].split('//') )
+				showLessonMenu( lessons[d].split('//'), d )
 			})
 
 	}
@@ -78,11 +80,14 @@ var build_sublists = function( divid, data ){
 
 }
 
-var showLessons = function( sentences ) {
+var showLessonMenu = function( sentences, lessonNum ) {
 
 	var content = d3.select('.clearfix')
 
 	// Add male/female button
+	content.append('h1')
+		.attr('class', 'lesson-header')
+		.text(lessonNum.replace("lesson","Lesson"))
 
 	var gbtn = content.append('div')
 		.attr('class', "gender-btns")
@@ -90,7 +95,8 @@ var showLessons = function( sentences ) {
 	// Male Button
 	gbtn.append('button')
 		.attr('class', "button gender-button button-circle button-highlight button-large button-selected")
-		.html('M')
+		.attr('gender', "m")
+		.html('남')
 		.on('click', function( d, i ) {
 			// Disselect all
 			d3.selectAll('.gender-button').classed('button-selected', false)
@@ -101,7 +107,8 @@ var showLessons = function( sentences ) {
 	// Female Button
 	gbtn.append('button')
 		.attr('class', "button gender-button button-circle button-highlight button-large")
-		.html('F')
+		.attr('gender', "f")
+		.html('여')
 		.on('click', function( d, i ) {
 			// Disselect all
 			d3.selectAll('.gender-button').classed('button-selected', false)
@@ -113,7 +120,7 @@ var showLessons = function( sentences ) {
 		.attr('class', "set-btns")
 
 	var svg = content.append('svg')
-				.style('height', '100%')
+				.style('height', '80%')
 				.style('width', '100%')
 				.attr('class', 'lesson-svg')
 
@@ -176,6 +183,9 @@ var showLessons = function( sentences ) {
 			.on('mouseout', function() {
 				d3.select(this).style('fill','#fcd549')
 			})
+			.on('click', function(d, i) {
+				console.log(  loadSoundFile( sentences[i] )  )
+			})
 
 		textBox.append('text')
 			.attr('x', rect_width/2 )
@@ -188,7 +198,7 @@ var showLessons = function( sentences ) {
 
 }
 
-var showAbout = function( such_wow, a_mei_zing ) {
+var showAbout = function( ) {
 
 	// Hard-coded Contents. Can separate these in another .js file, I guess.
 	var content = {
@@ -216,10 +226,43 @@ var showAbout = function( such_wow, a_mei_zing ) {
 		.html( function(d, i){ return content[d] } )		// used .html instead of .text to use line break tag (<br>) included in the text
 		.attr('class', function(d,i){
 			if (d == 'help'){
-				return "about-help"
-			}
-		})
-}
+				return "about-help main-paragraph"
+			} else {
+				return "main-paragraph"
+			};
+		});
+};
+
+var showInstruction = function( ) {
+
+	// Hard-coded Contents. Can separate these in another .js file, I guess.
+	var content = {
+		p1: "각 레슨은 25개의 문장들로 구성되어 있고, 버튼을 누르면 녹음된 문장을 들을 수가 있습니다.",
+		p2: "레슨 상단에 위치한 버튼을 조작해 어느 성별의 목소리로 문장을 들을지 고를 수 있습니다.",
+		p3: "우측 상단에 위치한 세트 버튼을 누르면 다른 페이지로 이동합니다.",
+		p4: "연습이 다 끝난 이후엔 퀴즈를 보셔서 본인의 숙련도를 확인하실 수 있습니다.",
+		p5: "무작위로 선택된 문장을 들으신 후 문장을 적어 정답 여부를 확인하여 주세요.",
+		p6: "스스로의 진척 상황을 '진행과정'' 메뉴에서 확인하실 수 있습니다."
+	}
+
+	removeLessons()
+
+	var main_div = d3.select(".clearfix");
+	main_div.append("h1")
+		.text("사용방법");
+
+	var division = main_div.append('div')
+						.style('width', "100%")
+						.style('height', "4px")
+						.style('background-color', "#ffc526");
+
+	main_div.selectAll('p')
+		.data( Object.keys(content) ).enter()
+		.append('p')
+		.html( function(d, i){ return content[d] } )		// used .html instead of .text to use line break tag (<br>) included in the text
+		.attr('class', "main-paragraph");
+};
+
 
 var removeLessons = function() {
 	
@@ -230,3 +273,86 @@ var removeLessons = function() {
 	}
 }
 
+var loadSoundFile = function( sentenceString ) {
+	// Select gender
+	var gender = d3.select(".gender-button.button-selected").attr('gender');
+
+	sentenceString = sentenceString.replace(',','')
+	sentenceString = sentenceString.replace('!','')
+	sentenceString = sentenceString.replace('?','')
+	sentenceString = sentenceString.replace('.','')
+
+	var filename = sentenceString + "_" + gender +".wav";
+	var lessonname = d3.select('.lesson-header').text().toLowerCase().replace(' ','');
+
+
+	// From: http://www.willvillanueva.com/the-web-audio-api-from-nodeexpress-to-your-browser/
+
+	function loadSound( context ) {
+		var request = new XMLHttpRequest();
+		request.open("GET", "/api/soundData?lesson=" + lessonname + "&fileName=" + filename, true); 
+		request.responseType = "arraybuffer";
+
+		request.onload = function() {
+		    var Data = request.response;
+		    process(Data, context);
+		};
+
+		request.send();
+	 }
+
+	function process(Data, context) {
+	  	source = context.createBufferSource(); // Create Sound Source
+	  	context.decodeAudioData(Data, function(buffer){
+	   		source.buffer = buffer;
+	   		source.connect(context.destination); 
+	   		source.start(context.currentTime);
+
+	})}
+
+	loadSound(audioContext) // Using global variable audioContext defined at initialization
+	/*
+	$.ajax({
+		url: "/api/soundData",
+		type: "get",
+		data: {lesson: lessonNum, fileName: filename },
+		success: function(data) {
+
+			window.AudioContext = window.AudioContext||window.webkitAudioContext;
+  			context = new AudioContext();
+
+  			function process(Data) {
+				source = context.createBufferSource(); // Create Sound Source
+				context.decodeAudioData(Data, function(buffer){
+				    source.buffer = buffer;
+				    source.connect(context.destination); 
+				    source.start(context.currentTime);
+				}	
+			)}
+
+			process(data)
+
+		}
+	})*/
+
+
+}
+
+
+
+// When menu buttons are clicked:
+$('#about-page').on('click', function(){ 
+	showAbout()
+
+	// Close Menu
+	d3.select('#mp-pusher').classed("mp-pushed", false)
+	d3.select('#mp-pusher').style("transform", 'translate3d(0,0,0)')
+});
+
+$('#instruction-page').on('click', function(){ 
+	showInstruction()
+
+	// Close Menu
+	d3.select('#mp-pusher').classed("mp-pushed", false)
+	d3.select('#mp-pusher').style("transform", 'translate3d(0,0,0)')
+});

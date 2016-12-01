@@ -16,6 +16,7 @@
     "body-parser": "^1.15.2",
     "child-process": "^1.0.2",
     "express": "^4.14.0",
+    "fs": "0.0.1-security",
     "jsonfile": "^2.4.0",
     "object-assign": "^4.1.0",
     "optimist": "^0.6.1"

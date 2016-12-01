@@ -20,7 +20,7 @@ var bodyParser = require('body-parser');
 var assert = require('assert')
 //var cors = require('cors'); // Cross - domain request... will I ever need this?
 var assign = require('object-assign');
-
+var fs = require('fs');
 var jsonfile = require( 'jsonfile' ); // to get local json data. Can use custom database instead, but for simplicity..
 
 function getDataFile( filename, callback ) {
@@ -66,6 +66,18 @@ app.get( '/api/lessonData', function ( req, res) {
     getDataFile( 'Korean_lessons.json', function( jsondata ) {
         res.status(201).json(jsondata)
     })
+})
+
+//http://www.willvillanueva.com/the-web-audio-api-from-nodeexpress-to-your-browser/
+app.get( '/api/soundData', function(req,res){
+
+    var filepath = path.join("data","audio",req.query.lesson,req.query.fileName)
+
+    res.set({"Content-Type": "audio/mpeg"});
+    var readStream = fs.createReadStream(filepath);
+
+    readStream.pipe(res);
+
 })
 
 app.listen( argv.port, function() {
