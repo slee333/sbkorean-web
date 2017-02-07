@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>${1}</title>
+    <title>Speech Banana</title>
     <meta name="description" content="${2}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -12,6 +12,8 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <meta name="google-signin-client_id" content="460158204141-aclb43a70l448iehp8s2u1u2c25f8dt7.apps.googleusercontent.com">
 
 </head>
 <body>
@@ -20,6 +22,10 @@
     <p> We will need some sort of authentication process here. </p>
     <p> Also we will need some database backend to browse usage/histories of our users </p>
 
+    <div class="g-signin2" data-onsuccess="onSignIn"></div>
+
+    <a href="#" onclick="signOut();">Sign out</a>
+
     <script src="http://code.jquery.com/jquery-1.12.4.min.js"></script>
     <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.12.4.min.js"><\/script>')</script>
 
@@ -27,6 +33,14 @@
     <script>
         window.ga=function(){ga.q.push(arguments)};ga.q=[];ga.l=+new Date;
         ga('create','UA-XXXXX-Y','auto');ga('send','pageview')
+
+        function signOut() {
+            var auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut().then(function () {
+              console.log('User signed out.');
+            });
+        }
+
     </script>
     <script src="https://www.google-analytics.com/analytics.js" async defer></script>
 </body>

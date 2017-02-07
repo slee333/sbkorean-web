@@ -60,8 +60,12 @@ CSS for buttons
 }
 
 .set-btns {
-	width: 50%;
+	width: 30%;
 	float: right;
+}
+
+.set-btns > button {
+	margin-right: 5%;
 }
 
 .button-selected {
@@ -75,4 +79,8 @@ CSS for buttons
 .about-help {
 	text-align: center;
 	margin-top: 5%;
+}
+
+.button-quiz {
+	cursor: pointer;	
 }
