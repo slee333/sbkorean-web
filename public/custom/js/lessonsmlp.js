@@ -39,12 +39,6 @@ var load_jsonData = function(filename, callback) {
 	}}
 )}
 
-load_jsonData( "Korean_lessons.json", function(data){
-	showAbout()
-	console.log("Data Loaded")
-	build_sublists('lesson-list', data)
-})
-
 function signOut() {
             var auth2 = gapi.auth2.getAuthInstance();
             auth2.signOut().then(function () {
@@ -65,9 +59,28 @@ var initClient = function() {
         	auth2 = auth
         	GoogleUser = auth.currentUser.get();
         	if (GoogleUser.isSignedIn() == true){
-			    var id_token = googleUser.getAuthResponse().id_token;
+			    var id_token = GoogleUser.getAuthResponse().id_token;
 
 			    // Ajax call to verify userid and GID of the current user
+			    $.ajax({
+			    	type:"get",
+			    	url:"/api/client_match",
+			    	data: { SBUserId: QueryString["userId"], "idtoken":id_token },
+			    	success: function( data ){
+			    		
+			    		console.log(data.msg);
+			    		load_jsonData( "Korean_lessons.json", function(data){
+							showAbout();
+							console.log("Data Loaded");
+							build_sublists('lesson-list', data);
+						});
+
+			    	}, error: function( err ){
+			    		
+			    		window.location = err.responseJSON.redirect;
+			    		console.log(err.responseJSON.msg);
+			    	}
+			    })
 
 			} else {
 				console.log('User not logged-in.');

@@ -56,7 +56,7 @@
                 type: "post",
                 data: { 'name': profile.getName(), "email": profile.getEmail(), "idtoken": id_token },
                 success: function(data){
-                    console.log("SUCCESS User Id successfully Loaded")
+                    console.log(data.msg)
                    
                     if (typeof(data.redirect) == "string") {
                          window.location = data.redirect

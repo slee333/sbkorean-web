@@ -115,6 +115,36 @@ function MongoMiddleWare( callback ) {
     }
 }
 
+function Oauth2MiddleWare(callback){
+    return function(req,res){
+
+        var keys = req.query;
+        assign(keys, req.body);
+
+        var token = keys.idtoken,
+            msg = "";
+
+        getDataFile("credentials.json", function(data){
+            var clientID = data.web.client_id
+            var auth = new GoogleAuth,
+                client = new auth.OAuth2(clientID, '', '');
+            client.verifyIdToken(
+                token,
+                clientID,
+                function(e, login) {
+                    if(e){
+                        msg = "ERROR Could not verify user authentication"
+                        res.status(401).send(msg)
+                        console.log(msg)
+                        res.end()
+                        return
+                    }
+                callback( req, res, keys, login  )
+            })
+        })
+    }
+}
+
 ////////////////* Request handlers *///////////////////
 
 
@@ -237,98 +267,123 @@ app.get('/api/score', MongoMiddleWare(
 ))
 
 // Authenticate, and create user info document if not already exist.
-// Wellcome to the callback hell - its straightforward tho. (sortof)
-app.post( "/api/auth", function(req,res){
+app.post("/api/auth", Oauth2MiddleWare(
+    function( req, res, keys, login){
 
-    var token = req.body.idtoken,
-        msg = "";
+        var payload = login.getPayload();
+        var userid = payload['sub']; // google userId, not SBUserId
+        var msg = ""
+        //var name = keys.name,
+        var email = keys.email;
 
-    getDataFile("credentials.json", function(data){
-        var clientID = data.web.client_id
-        
-        var auth = new GoogleAuth,
-            client = new auth.OAuth2(clientID, '', '');
+        // Get Mongo Instances
+        MongoMiddleWare(function(req,res,db){
 
-        client.verifyIdToken(
-            token,
-            clientID,
-            function(e, login) {
+            // Find if user information exists
+            // Idea - check how many times they logged in? Like, record log-in time?
+            db.collection("userInfo").find({"GUserId":userid}, 
+                function(err, cursor){
 
-                if(e){
-                    msg = "ERROR Could not verify user authentication"
-                    res.status(401).send(msg)
-                    console.log(msg)
-                    res.end()
-                    return
-                }
+                    if (err) {
+                        msg = "ERROR Could not get user information: " + err; console.log(msg); 
+                        res.status(500).send(msg)
+                        return
+                    }
+                    cursor.toArray( function (err, docs ){
 
-                var payload = login.getPayload();
-                var userid = payload['sub']; // google userId, not SBUserId
-                
-                var name = req.body.name,
-                    email = req.body.email;
+                        if (docs.length > 0) {
 
-                // Get Mongo Instances
-                MongoMiddleWare(function(req,res,db){
-
-                    // Find if user information exists
-                    // Idea - check how many times they logged in? Like, record log-in time?
-                    db.collection("userInfo").find({"GUserId":userid}, 
-                        function(err, cursor){
-
-                            if (err) {
-                                msg = "ERROR Could not get user information: " + err
-                                console.log(msg)
-                                res.status(500).send(msg)
-                                return
-                            }
-                            cursor.toArray( function (err, docs ){
-
-                                if (docs.length > 0) {
-
-                                    var SBUserId = docs[0]["SBUserId"];
-
-                                    // Update login times? Idk. Send webpage
-                                    res.status(200).send({redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) }) 
+                            msg = "SUCCESS User successfully logged in";
+                            var SBUserId = docs[0]["SBUserId"];
+                            // Update login times? Idk. Send webpage
+                            res.status(200).send({ msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) }) 
+                            res.end()
+                            db.close()
+                            return
+                        }
+                        else{
+                            // Create new userinfo document
+                            
+                            db.collection("userInfo").count( function(err,count){
+                                
+                                var SBUserId = String(count+1);
+                                
+                                db.collection("userInfo").insert({
+                                    "SBUserId": SBUserId,
+                                    "GUserId": userid,
+                                    //"name": name,
+                                    "email": email,
+                                    "locale": payload.locale,
+                                    "score": {}
+                                }, function(err,result){
+                                    
+                                    if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
+                                    msg = "SUCCESS New user registered with userId: " + SBUserId;
+                                    console.log( msg )
+                                    res.status(200).send({msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
                                     res.end()
                                     db.close()
                                     return
-                                }
-                                else{
-                                    // Create new userinfo document
                                     
-                                    db.collection("userInfo").count( function(err,count){
-                                        
-                                        var SBUserId = String(count+1);
-
-                                        db.collection("userInfo").insert({
-                                            "SBUserId": SBUserId,
-                                            "GUserId": userid,
-                                            "name": name,
-                                            "email": email,
-                                            "locale": payload.locale,
-                                            "score": {}
-                                        }, function(err,result){
-                                            
-                                            if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
-                                            
-                                            console.log("New user registered with userId: " + SBUserId )
-
-                                            res.status(200).send({redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
-                                            res.end()
-                                            db.close()
-                                            return
-                                            
-                                        })
-                                    })
-                                }
+                                })
                             })
+                        }
                     })
-                })(req,res)
             })
-    })
-})
+        })(req,res)
+    }
+))
 
+// Check if user is redirected to the right page.
+app.get( "/api/client_match", Oauth2MiddleWare(
+    function(req, res, keys, login) {
+
+        var payload = login.getPayload();
+        var GUserid = payload['sub']; // google userId, not SBUserId
+        var SBUserId = keys.SBUserId;
+        var msg = ""
+
+        MongoMiddleWare( function(req,res,db){
+
+            db.collection("userInfo").find({"GUserId":GUserid}, function(err, cursor){
+                if (err) {
+                        msg = "ERROR Could not get user information: " + err; console.log(msg); 
+                        res.status(500).send(msg)
+                        return
+                }
+
+                cursor.toArray(function(err, docs){
+
+                    if (docs.length > 0 && docs[0]["SBUserId"]==SBUserId){
+                        // google Id and SB User Id match --> you may stay
+                        msg = "SUCCESS UserId matches with Google Id"
+                        res.status(200).send({ msg: msg, redirect: null })
+                        res.end()
+                        db.close()
+                        return
+                    } else if ( docs.length > 0 && docs[0]["SBUserId"]!=SBUserId ){
+                        // Google Id and SB User Id mismatch --> you redirected to right SBUID
+                        var redirectURL = '/lessons?userId=' + encodeURIComponent(docs[0]["SBUserId"]);
+                        msg = "ERROR UserId mismatched with Google Id. Redirected to " + redirectURL;
+                        res.status(303).send({ msg: msg,
+                            redirect: redirectURL
+                        });
+                        res.end()
+                        db.close()
+                        return
+                    } else{
+                        // Google Id nor SB UID in our dB --> Hello Unauthorized user. plz go to the login page.
+                        msg = "ERROR Unauthorized user. Redirecting to login page."
+                        res.status(403).send({ msg: msg, redirect: '/' });
+                        res.end()
+                        db.close()
+                        return
+                    }
+                })
+            })
+        })(req,res)
+    }
+))
 
 
 app.listen( argv.port, function() {
