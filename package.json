@@ -17,6 +17,7 @@
     "child-process": "^1.0.2",
     "express": "^4.14.0",
     "fs": "0.0.1-security",
+    "google-auth-library": "^0.10.0",
     "jsonfile": "^2.4.0",
     "mongodb": "^2.2.22",
     "object-assign": "^4.1.0",

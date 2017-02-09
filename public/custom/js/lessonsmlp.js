@@ -6,6 +6,29 @@
 //Any better/faster way to do this? Need to think..
 //Load Lesson data and create submenus
 
+var QueryString = function () {
+  // This function is anonymous, is executed immediately and 
+  // the return value is assigned to QueryString!
+  var query_string = {};
+  var query = window.location.search.substring(1);
+  var vars = query.split("&");
+  for (var i=0;i<vars.length;i++) {
+    var pair = vars[i].split("=");
+        // If first entry with this name
+    if (typeof query_string[pair[0]] === "undefined") {
+      query_string[pair[0]] = decodeURIComponent(pair[1]);
+        // If second entry with this name
+    } else if (typeof query_string[pair[0]] === "string") {
+      var arr = [ query_string[pair[0]],decodeURIComponent(pair[1]) ];
+      query_string[pair[0]] = arr;
+        // If third or later entry with this name
+    } else {
+      query_string[pair[0]].push(decodeURIComponent(pair[1]));
+    }
+  } 
+  return query_string;
+}();
+
 var load_jsonData = function(filename, callback) {
 	$.ajax({
 	url: "/api/lessonData",
@@ -21,19 +44,44 @@ load_jsonData( "Korean_lessons.json", function(data){
 	console.log("Data Loaded")
 	build_sublists('lesson-list', data)
 })
-/*
-var korean_lessonsData = $.ajax({
-	url: "/api/lessonData",
-	type: "get",
-	success: function(data){
-		datdat = data
-		showAbout()
-		console.log( " Data Loaded " );
-		var data_json = korean_lessonsData.responseJSON;
-		build_sublists('lesson-list', data_json)		
 
-	}
-})*/
+function signOut() {
+            var auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut().then(function () {
+              console.log('User signed out.');
+              window.location = "/" ; 
+            });
+        }
+// Initiate Google Client (  )
+var initClient = function() {
+
+    gapi.load('auth2', function(){
+
+        auth2 = gapi.auth2.init({
+            client_id: '460158204141-aclb43a70l448iehp8s2u1u2c25f8dt7.apps.googleusercontent.com'
+        }).then( function( auth ){
+        	
+        	// Erase this after making sign out button
+        	auth2 = auth
+        	GoogleUser = auth.currentUser.get();
+        	if (GoogleUser.isSignedIn() == true){
+			    var id_token = googleUser.getAuthResponse().id_token;
+
+			    // Ajax call to verify userid and GID of the current user
+
+			} else {
+				console.log('User not logged-in.');
+				window.location = "/"
+			}
+        }, function( err ){
+        	console.log("ERROR: failed to initialize authentication")
+        	console.log(err)
+        });
+
+
+    });
+
+}();
 
 // Replacing all elements in string
 String.prototype.replaceAll = function(search, replacement) {
@@ -54,7 +102,7 @@ var audioContext = new AudioContext();
 var screen_height = $('.scroller-inner').height();
 var header_height =  $('.main-header').outerHeight();
 var body_height = screen_height - $('.main-header').outerHeight();
-var margin = 60;
+var margin = 20;
 $('.clearfix').height((body_height - margin*2))
 
 
@@ -389,14 +437,10 @@ var showQuiz = function( lessonNum ) {
 		wrong 		  : Number of wrong answers
 		*/
 
-		// For testing purposes (until authentication) - hard-code userID. Later use queryString
-		userId = 12345
-		// Ideally, after login setup, we will get user Id from QueryString.
-
 		$.ajax({
 			url: "/api/recordScore",
 			type: "post",
-			data: { "userId" : userId, "lessonNum": lessonNumber, "timestamp": timestamp, "right": right, "wrong": wrong},
+			data: { "userId" : QueryString['userId'], "lessonNum": lessonNumber, "timestamp": timestamp, "right": right, "wrong": wrong},
 			success: function(data){
 				console.log( " Score updated " )
 			},
@@ -414,12 +458,10 @@ var showQuiz = function( lessonNum ) {
 		timestamp     : epoch timestamp of today (in UTC)
 		*/
 		
-		userId = 12345		// Hard-coded UserId for testing purposes
-
 		$.ajax({
 			url: "/api/score",
 			type: "get",
-			data: { "userId": userId , "lessonNum": lessonNum, "timestamp": timestamp },  // lessonNum: in form of "lessonX" - X: Integer. Potentially add timestamp?
+			data: { "userId": QueryString['userId'] , "lessonNum": lessonNum, "timestamp": timestamp },  // lessonNum: in form of "lessonX" - X: Integer. Potentially add timestamp?
 			success: function(data){
 				console.log(data)
 								
@@ -505,7 +547,95 @@ var showInstruction = function( ) {
 
 var showProgress = function() {
 
+	removeLessons()
+
+	var main_div = d3.select(".clearfix");
+		main_div.append("h1")
+			.html("<b>진행상황</b>");
+
+	var division = main_div.append('div')
+						.style('width', "100%")
+						.style('height', "4px")
+						.style('background-color', "#ffc526");
+
+	var timePanel = main_div.append("div")
+							.attr("id","timePanel")
+							.attr("class","row controlPanel")
 	
+	// Add Daterange picker	
+	var timeRangeCol = timePanel.append("div")
+							.attr("class", "col-md-4")
+	
+	timeRangeCol.append("h4")
+		.html("열람 시간: ")
+		.style("width","20%")
+		.style("margin-right","3%")
+		.style("display","inline-block")
+		
+		.style("margin-bottom","20px")
+
+	var timeRange = timeRangeCol.append("input")
+						.attr("type","text")
+						.attr("id","progress_timerange")
+						.attr("class","form-control")
+						.attr("value", "01/01/2017 - 12/31/2017")
+						.style("display","inline-block")
+						.style("width","75%")
+						.style("font-size","large")
+
+	timeRangeCol.append("i")
+		.attr("class", "glyphicon glyphicon-calendar fa fa-calendar")
+		.style("position","absolute")
+		.style("top","auto")
+		.style("bottom","22px")
+		.style("right","32px")
+
+	// Add Predefiend daterange picker	
+	var PDTR_col = timePanel.append("div")
+						.attr("class", "col-md-3");
+	PDTR_col.append("h4")
+		.html("기간: ")
+		.style("display","inline-block")
+		.style("width","20%")
+
+	var PDTR_dat = [{"timestamp": moment().subtract(3, 'days' ).unix(), "text": "3일" },
+					{"timestamp": moment().subtract(1, 'week' ).unix(), "text": "일주"}, 
+					{"timestamp": moment().subtract(1, 'months').unix(), "text": "한달"}, 
+					{"timestamp": moment().subtract(1, 'year' ).unix(), "text":"1년" }
+				]
+
+	var radioBtns = PDTR_col.append("div")
+		.attr("id","radio-btn-pdtr")
+		.style("width","80%")
+		.selectAll("input")
+			.data(PDTR_dat).enter()
+			.append("input")
+			.attr("type","radio")
+			.attr("class", "radio-btns-pdtr")
+			.attr("value", function(d,i){return d.text})
+			.attr("timestamp", function(d,i){ return d.timestamp });
+
+	$("#radio-btn-pdtr").multiPicker({
+		selector: "radio",
+		cssOptions:{
+			size: "large",
+			element: {
+				"font-size": "12px",
+				"color": "#3a3a3a",
+			},
+			selected: {
+				"border-color": "#ffc526",
+				"font-size": "12px",
+				"font-weight": "bold"
+			},
+			picker: {
+				"border-color": "transparent"
+			}
+		}
+	})
+	
+	$("#progress_timerange").daterangepicker()
+
 }
 
 var removeLessons = function() {
@@ -567,6 +697,14 @@ $('#about-page').on('click', function(){
 
 $('#instruction-page').on('click', function(){ 
 	showInstruction()
+
+	// Close Menu
+	d3.select('#mp-pusher').classed("mp-pushed", false)
+	d3.select('#mp-pusher').style("transform", 'translate3d(0,0,0)')
+});
+
+$('#progress-page').on('click', function(){ 
+	showProgress()
 
 	// Close Menu
 	d3.select('#mp-pusher').classed("mp-pushed", false)

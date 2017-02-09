@@ -3,16 +3,10 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Speech Banana Lesson</title> 
+    <title>Speech Banana</title> 
 
-    <!-- 
     <link rel="stylesheet" href = 'components/bootstrap/dist/css/bootstrap.min.css'>
-    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-    <link rel="stylesheet" href = 'custom/css/lessons.css'> 
-    <link rel="stylesheet" type="text/css" href="custom/css/lesson_mlp.css" />
-    <link rel="stylesheet" type="text/css" href="custom/css/demo.css" />
-    -->
-    <link rel="stylesheet" href = 'components/bootstrap/dist/css/bootstrap.min.css'>
+    <link rel="stylesheet" href = 'components/multipicker/dist/multipicker.min.css'>
     <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="custom/css/normalize.css" />
     <link rel="stylesheet" type="text/css" href="custom/css/icons.css" />
@@ -20,6 +14,16 @@
     <link rel="stylesheet" type="text/css" href="custom/css/buttons.css" />
     <link rel="stylesheet" type="text/css" href="custom/css/lesson_mlp.css" />
     <link rel="stylesheet" type="text/css" href="components/glyphicons-only-bootstrap/css/bootstrap.css" />
+
+    <!-- Requirements for RangePicker
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap/3/css/bootstrap.css" />-->
+     
+    <!-- Include Date Range Picker -->
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css" />
+
+    <!--Include Google Sign-in thing?-->
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <meta name="google-signin-client_id" content="460158204141-aclb43a70l448iehp8s2u1u2c25f8dt7.apps.googleusercontent.com">
 
 </head>
 <body>
@@ -71,7 +75,7 @@
 
                         <li>
                             <a class="icon icon-params" id = "progress-page" href="#"> Progress </a>
-                        </li> <!-- Data analysis Page -->
+                        </li> <!-- Progress Page -->
 
                         <li>
                             <a class="icon icon-data" id = "data-analysis-page" href="#"> Data Analysis </a>
@@ -122,6 +126,10 @@
     <script src="custom/js/mlpushmenu.js"></script>
     <script src="custom/js/modernizr.custom.js"></script>
     <script src="custom/js/lessonsmlp.js"></script>
+    <script src="components/multipicker/dist/multipicker.min.js"></script>
+
+    <script type="text/javascript" src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
 
 </body>
 </html>
