@@ -232,7 +232,8 @@ app.get('/api/score', MongoMiddleWare(
 
         var query = {}
         query["score."+ req.query.lessonNum + "." + req.query.timestamp] = 1
-        // Update user score
+        
+        // Get user score
         db.collection( "userInfo" ).find(
             {"SBUserId": req.query.userId}, query,
             function(err, cursor) {
@@ -263,6 +264,96 @@ app.get('/api/score', MongoMiddleWare(
                 })
             }
         )
+    }
+))
+
+// Get score within certain range
+app.get('/api/allScore', MongoMiddleWare(
+    function(req,res,db){
+
+        var msg = "";
+
+        var query = {};
+        var lessonNums = req.query.lessonNums; // list of Lesson Nums
+        
+        for (var i = 0; i < lessonNums.length; i++) {
+            query["score."+ lessonNums[i] ] = 1    
+        }
+
+        var st = req.query.timeRange[0],
+            et = req.query.timeRange[1],
+            result = {};
+
+        // Get scores within certain timerange
+        db.collection( "userInfo" ).find(
+            {"SBUserId": req.query.userId}, query,
+            function(err, cursor) {
+                if (err) {
+                    msg = "ERROR Could not get test score: " + err
+                    console.log(msg)
+                    res.status(500).send(msg)
+                    return
+                }
+                cursor.toArray( function (err, docs) {
+                    
+                    /*
+                    Current score structure:
+
+                    'score' : { 
+                        "lessonX": { "timestamp1": {'right': 9, 'wrong': 1}, "timestamp2": {"right":21, "wrong": 22} },
+                        "lessonY": {'right': 2, 'wrong': 10}
+                    }
+                    */
+                    
+                    function timeFilter(value){
+                        return value >= st & value <= et 
+                    }
+
+                    var scores = docs[0]["score"];
+                    
+                    if ( req.query.keys == "lessons") {     // Return right/wrong sorted based on lessons
+                        for (var l = 0; l < lessonNums.length; l++){
+
+                            result[ lessonNums[l] ] = { "right":0, "wrong": 0}
+
+                            if (scores[ lessonNums[l] ] != undefined) {
+                                var lessonTimes = Object.keys( scores[ lessonNums[l] ] ).filter(timeFilter);
+                            
+                                for (var t = 0; t < lessonTimes.length ; t++ ){
+                                    result[ lessonNums[l] ].right += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right )
+                                    result[ lessonNums[l] ].wrong += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong )
+                                }
+                            }
+                        }       
+                    } else if (req.query.keys == "date") {  // Return right/wrong sorted based on time
+                        for (var l = 0 ; l < lessonNums.length; l++) {
+                            if (scores[ lessonNums[l] ] != undefined) {
+                                var lessonTimes = Object.keys( scores[ lessonNums[l] ] ).filter(timeFilter);
+
+                                for (var t = 0; t < lessonTimes.length ; t++ ){
+                                    if (lessonTimes[t] in result){
+                                        result[ lessonTimes[t] ].right += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right )
+                                        result[ lessonTimes[t] ].wrong += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong )
+                                    } else {
+                                        result[ lessonTimes[t] ] = { "right": Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right ) ,
+                                                                     "wrong": Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong )}
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // When score is empty for today
+                    msg = "SUCCESS All scores successfully loaded from dB"
+                    console.log(msg);
+                    res.writeHead(200, {"Content-Type": "application/json"});
+                    res.end( JSON.stringify(result));
+                    db.close();
+                    return
+                })
+            }
+        )
+
     }
 ))
 
