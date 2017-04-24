@@ -197,7 +197,8 @@ app.post( '/api/recordScore', MongoMiddleWare(
 
         var update = {};
         var query = "score."+ req.body.lessonNum + "." + req.body.timestamp
-        update[query] = { "right": req.body.right , "wrong": req.body.wrong };
+        update[query] = { "right_sentences": req.body.right_sentences , "wrong_sentences": req.body.wrong_sentences,
+                          "right_words": req.body.right_words , "wrong_words": req.body.wrong_words , "replay": req.body.replay  };
 
         // Update user score
         db.collection( "userInfo" ).updateOne(
@@ -249,11 +250,12 @@ app.get('/api/score', MongoMiddleWare(
                     if (  docs.length > 0 && docs[0]["score"]!=undefined && 
                           docs[0]["score"][req.query.lessonNum] != undefined &&
                           docs[0]["score"][req.query.lessonNum][req.query.timestamp] != undefined ) {
-                        
+                        console.log(result)
                         var result = docs[0]["score"][req.query.lessonNum][req.query.timestamp]
                         
                     } else {
-                        var result = {"right": 0, "wrong": 0}
+                        var result = {"right_sentences": 0, "wrong_sentences": 0,
+                                      "right_words" : 0, "wrong_words": 0, "replay": 0}
                     }
                     msg = "SUCCESS Score successfully loaded from dB"
                     console.log(msg);
@@ -300,7 +302,7 @@ app.get('/api/allScore', MongoMiddleWare(
                     Current score structure:
 
                     'score' : { 
-                        "lessonX": { "timestamp1": {'right': 9, 'wrong': 1}, "timestamp2": {"right":21, "wrong": 22} },
+                        "lessonX": { "timestamp1": {'right_sentences': 9, 'wrong_sentences': 1, 'right_words':3, 'wrong_words': 2, 'replay':71}, "timestamp2": {"right":21, "wrong": 22} },
                         "lessonY": {'right': 2, 'wrong': 10}
                     }
                     */
@@ -314,14 +316,14 @@ app.get('/api/allScore', MongoMiddleWare(
                     if ( req.query.keys == "lessons") {     // Return right/wrong sorted based on lessons
                         for (var l = 0; l < lessonNums.length; l++){
 
-                            result[ lessonNums[l] ] = { "right":0, "wrong": 0}
+                            result[ lessonNums[l] ] = { "right_sentences":0, "wrong_sentences": 0, "right_words": 0, "wrong_words":0, "replay":0}
 
                             if (scores[ lessonNums[l] ] != undefined) {
                                 var lessonTimes = Object.keys( scores[ lessonNums[l] ] ).filter(timeFilter);
                             
                                 for (var t = 0; t < lessonTimes.length ; t++ ){
-                                    result[ lessonNums[l] ].right += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right )
-                                    result[ lessonNums[l] ].wrong += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong )
+                                    result[ lessonNums[l] ].right_sentences += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right_sentences )
+                                    result[ lessonNums[l] ].wrong_sentences += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong_sentences )
                                 }
                             }
                         }       
@@ -332,11 +334,11 @@ app.get('/api/allScore', MongoMiddleWare(
 
                                 for (var t = 0; t < lessonTimes.length ; t++ ){
                                     if (lessonTimes[t] in result){
-                                        result[ lessonTimes[t] ].right += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right )
-                                        result[ lessonTimes[t] ].wrong += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong )
+                                        result[ lessonTimes[t] ].right_sentences += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right_sentences )
+                                        result[ lessonTimes[t] ].wrong_sentences += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong_sentences )
                                     } else {
-                                        result[ lessonTimes[t] ] = { "right": Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right ) ,
-                                                                     "wrong": Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong )}
+                                        result[ lessonTimes[t] ] = { "right_sentences": Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right_sentences ) ,
+                                                                     "wrong_sentences": Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong_sentences )}
                                     }
                                 }
                             }

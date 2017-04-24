@@ -47,6 +47,7 @@ function signOut() {
             });
         }
 // Initiate Google Client (  )
+/*
 var initClient = function() {
 
     gapi.load('auth2', function(){
@@ -69,12 +70,12 @@ var initClient = function() {
 			    	success: function( data ){
 			    		
 			    		console.log(data.msg);
-			    		/*
+			    		
 			    		load_jsonData( "Korean_lessons.json", function(data){
 							showAbout();
 							console.log("Data Loaded");
 							build_sublists('lesson-list', data);
-						});*/
+						});
 
 			    	}, error: function( err ){
 			    		
@@ -96,6 +97,7 @@ var initClient = function() {
     });
 
 }();
+*/
 
 // Track mouse position in pixels (for tooltip)
 var cursorX, cursorY
@@ -120,7 +122,6 @@ load_jsonData( "Korean_lessons.json", function(data){
 							console.log("Data Loaded");
 							build_sublists('lesson-list', data);
 						});
-
 
 
 //////////////////// Layout /////////////////////////////*****
@@ -396,7 +397,18 @@ var showQuiz = function( lessonNum ) {
 						.style("font-size", 100+"px")
 						.style("color", "#ffc526")
 						.on("click", function() {
-							loadSoundFile( lessonSentences[seed], gender, lessonNum )
+							loadSoundFile( lessonSentences[seed], gender, lessonNum );
+
+							if ($(".repeat-button").length){
+								console.log("repeat clicked")
+								var repeat_counts=  Number(d3.select(".replay-counts").attr("data")) + 1 ;
+								d3.select(".replay-counts").text( "Replays: " + repeat_counts )
+									.attr("data", repeat_counts)
+								recordScore( lessonNum.replace("lesson ", "lesson"), today, 
+									d3.select(".score-right_sentences").attr("data") ,  d3.select(".score-wrong_sentences").attr("data"), 
+									d3.select(".score-right_words").attr("data"), d3.select(".score-wrong_words").attr("data"), 
+									d3.select(".replay-counts").attr("data") )
+							}
 						})
 
 	var answerInputGroup = input_div.append("div").style("text-align", "center")
@@ -419,30 +431,85 @@ var showQuiz = function( lessonNum ) {
 				.attr("id","button-answer")
 				.text("제출")
 				.on("click", function () { 
-					quizScore( lessonSentences[seed], $("#answer").val() )
+					if ($(this).attr("class") == "btn btn-default") {
+						// Appear right answer
+						$(".answer-original").text("정답   : " + lessonSentences[seed])
+						$(".answer-user").text("나의 답: " + $("#answer").val() )
 
-					// Re-assign randoms
-					seed = Math.floor(Math.random() * lessonSentences.length );
-					gender = ["m","f"][Math.floor(Math.random()*2)];
-					
+						quizScore( lessonSentences[seed], $("#answer").val() )
+						
+						$("input").prop("disabled", true)
+						$(this).text("계속")
+						$(this).addClass( "btn-proceed" )
+						playButton.transition().duration(200).attr("class", "playButton glyphicon glyphicon-repeat repeat-button")
+						
+						//
+					} else {
+						// Re-assign randoms
+						seed = Math.floor(Math.random() * lessonSentences.length );
+						gender = ["m","f"][Math.floor(Math.random()*2)];
+
+						// Remove class, change button text, change icon, remove answers.
+						$(".answer-original").text("")
+						$(".answer-user").text("")
+						$("input").prop("disabled", false)
+						$(this).text("제출")
+						$(this).attr("class", "btn btn-default" )
+						playButton.transition().duration(200).attr("class", "playButton glyphicon glyphicon-play-circle")
+					}
 				})
 
+	/*
+	Score quizes.
+	*/
 	var quizScore = function ( originalString, answerString ) {
+
+		// Score word for words
+		var original_words = originalString.replaceAll("!","").replaceAll(",","").replaceAll("?","").replaceAll(".","").split(" ");
+		var answer_words = answerString.replaceAll("!","").replaceAll(",","").replaceAll("?","").replaceAll(".","").split(" ");
+
+		if (original_words.length > answer_words.length){
+			for (var words = 0; words < (original_words.length - answer_words.length); words ++ ) {
+				answer_words.push("")
+			}
+		}
+
+		var right_words = 0;
+		var wrong_words = 0;
+		
+		for (var i = 0; i < original_words.length ; i++ ){
+			if (original_words[i] == answer_words[i]) {
+				right_words += 1;
+			} else {
+				wrong_words += 1;
+			}
+		}
+		
+		var right_words = Number(d3.select(".score-right_words").attr("data")) + right_words;
+		var wrong_words = Number(d3.select(".score-wrong_words").attr("data")) + wrong_words;
+		d3.select(".score-right_words").text( "Right words: " + right_words )
+				.attr("data", right_words)
+		d3.select(".score-wrong_words").text( "Wrong words: " + wrong_words )
+				.attr("data", wrong_words)
+
+		// Score sentence to sentence
 		var original_ = originalString.replaceAll("!","").replaceAll(",","").replaceAll("?","").replaceAll(".","").replaceAll(" ","");
 		var answer_ = answerString.replaceAll("!","").replaceAll(",","").replaceAll("?","").replaceAll(".","").replaceAll(" ","");
+
+		// Modify: words that got right, etc.
 
 		// Clear the input field
 		$("#answer").val("");
 
 		// Where the scoring algorithm kicks in
 		if (original_ == answer_) {
-			var right = Number(d3.select(".score-right").attr("data")) + 1;
-			d3.select(".score-right").text( "Right answers: " + right )
-				.attr("data", right)
+			var right_sentences = Number(d3.select(".score-right_sentences").attr("data")) + 1;
+			d3.select(".score-right_sentences").text( "Right answers: " + right_sentences )
+				.attr("data", right_sentences)
 		} else {
-			var wrong = Number(d3.select(".score-wrong").attr("data")) + 1;
-			d3.select(".score-wrong").text( "Wrong answers: " + wrong )
-				.attr("data", wrong)
+			var wrong_sentences = Number(d3.select(".score-wrong_sentences").attr("data")) + 1;
+			d3.select(".score-wrong_sentences").text( "Wrong answers: " + wrong_sentences )
+				.attr("data", wrong_sentences)
 		}
 
 		// Ideally update write and wrong to the server?
@@ -452,10 +519,12 @@ var showQuiz = function( lessonNum ) {
 
 		// Save current score, current time to the dB
 		recordScore( lessonNum.replace("lesson ", "lesson"), today, 
-			d3.select(".score-right").attr("data") ,  d3.select(".score-wrong").attr("data"))
+			d3.select(".score-right_sentences").attr("data") ,  d3.select(".score-wrong_sentences").attr("data"), 
+			d3.select(".score-right_words").attr("data"), d3.select(".score-wrong_words").attr("data"), 
+			d3.select(".replay-counts").attr("data") )
 	}
 
-	var recordScore = function ( lessonNumber, timestamp, right, wrong) {
+	var recordScore = function ( lessonNumber, timestamp, right_sentences, wrong_sentences, right_words, wrong_words, replay) {
 		/*
 		lessonNumber  : Lesson number in form of 'Lesson #'
 		timestamp     : epoch timestamp of today (in UTC)
@@ -466,7 +535,10 @@ var showQuiz = function( lessonNum ) {
 		$.ajax({
 			url: "/api/recordScore",
 			type: "post",
-			data: { "userId" : QueryString['userId'], "lessonNum": lessonNumber, "timestamp": timestamp, "right": right, "wrong": wrong},
+			data: { "userId" : QueryString['userId'], "lessonNum": lessonNumber, "timestamp": timestamp, 
+			"right_sentences": right_sentences, "wrong_sentences": wrong_sentences, "right_words": right_words,
+			"wrong_words": wrong_words, "replay": replay},
+
 			success: function(data){
 				console.log( " Score updated " )
 			},
@@ -491,10 +563,17 @@ var showQuiz = function( lessonNum ) {
 			success: function(data){
 				console.log(data)
 								
-				d3.select(".score-right").text( "Right answers: " + data.right )
-					.attr("data", data.right)
-				d3.select(".score-wrong").text( "Wrong answers: " + data.wrong )
-					.attr("data", data.wrong)
+				d3.select(".score-right_sentences").text( "Right answers: " + data.right_sentences )
+					.attr("data", data.right_sentences)
+				d3.select(".score-wrong_sentences").text( "Wrong answers: " + data.wrong_sentences )
+					.attr("data", data.wrong_sentences)
+				d3.select(".score-right_words").text( "Right words: " + data.right_words )
+					.attr("data", data.right_words)
+				d3.select(".score-wrong_words").text( "Wrong words: " + data.wrong_words )
+					.attr("data", data.wrong_words)
+				d3.select(".replay-counts").text( "Replays: " + data.replay )
+					.attr("data", data.replay)
+
 			},
 			error: function(err) {
 				console.log(err)
@@ -504,13 +583,32 @@ var showQuiz = function( lessonNum ) {
 
 	input_div.append("div").style("text-align", "center")
 				.append("p")
-				.attr("class", "score score-right")
+				.attr("class", "answer-original")
 
 	input_div.append("div").style("text-align", "center")
 				.append("p")
-				.attr("class", "score score-wrong")
+				.attr("class", "answer-user")
 
-	
+	input_div.append("div").style("text-align", "center")
+				.append("p")
+				.attr("class", "score score-right_sentences")
+
+	input_div.append("div").style("text-align", "center")
+				.append("p")
+				.attr("class", "score score-wrong_sentences")
+
+	input_div.append("div").style("text-align", "center")
+				.append("p")
+				.attr("class", "score score-right_words")
+
+	input_div.append("div").style("text-align", "center")
+				.append("p")
+				.attr("class", "score score-wrong_words")
+
+	input_div.append("div").style("text-align", "center")
+				.append("p")
+				.attr("class", "score replay-counts")
+
 	var now = new Date().getTime() / 1000; // Current timestamp in seconds
 	var today = now - (now % (60*60*24));
 	getScore( lessonNum.replace("lesson ", "lesson"), today )
@@ -570,8 +668,6 @@ var showInstruction = function( ) {
 			.attr('class', "main-paragraph");
 	})
 };
-
-
 
 var showProgress = function( data ) {
 
@@ -741,7 +837,6 @@ var showProgress = function( data ) {
 		buttonClass: 'btn btn-default btn-navplot',
         enableClickableOptGroups: true,
         enableCollapsibleOptGroups: true,
-        includeSelectAllOption: true,
         onChange: function(option, checked){
 
         	var currTimes = $("#progress_timerange").val().split(" - ");
@@ -791,6 +886,7 @@ var showProgress = function( data ) {
     	var endTime = new Date( end.year() , end.month() , end.date()	).getTime() / 1000;
 
     	getAllScore( $('#chapter-multiple-selected').val(), [startTime, endTime], "lessons", function(data){
+    		//console.log(data)
     		var data_mod = $.map( data, function( value, index) { return [{"lesson": index.replace("lesson","과 "), "score": value}] } );
     		stackedBarChart( svg_lpp, margin_lpp, layer_lpp, data_mod )
     	})
@@ -826,7 +922,8 @@ var stackedBarChart = function( svg, margin, layer, data ) {
 	//https://bl.ocks.org/mbostock/1134768
 
 	// Remove all other graphics on the svg
-	svg.selectAll("g").remove()
+	svg.selectAll("g").transition().duration(200).style("opacity", 0 ).remove()
+	d3.select(".tooltip-lpp").remove()
 
 	if (data.length == 0) {
 		return
@@ -864,7 +961,7 @@ var stackedBarChart = function( svg, margin, layer, data ) {
     		return {x: d.lesson, y: d.score[c]};
     	});
     }));
-
+	console.log(layers)
 	x.domain(layers[0].map(function(d) { return d.x; }));
 	y.domain([0, d3.max(layers[layers.length - 1], function(d) { return d.y0 + d.y; })]).nice();
 
@@ -913,6 +1010,11 @@ var stackedBarChart = function( svg, margin, layer, data ) {
     	.attr("transform", "translate(" + width + ",0)")
     	.call(yAxis);
 
+    svg.style("opacity", 0)
+    	.transition()
+    	.duration(500)
+    	.style("opacity", 1)
+
 }
 
 var removeLessons = function() {
@@ -920,6 +1022,7 @@ var removeLessons = function() {
 	var node = d3.select('.clearfix').node()
 
 	while (node.hasChildNodes()) {
+		//$( node.lastChild ).fadeOut(300, function() { $(this).remove(); })
     	node.removeChild(node.lastChild);
 	}
 }
