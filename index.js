@@ -324,6 +324,9 @@ app.get('/api/allScore', MongoMiddleWare(
                                 for (var t = 0; t < lessonTimes.length ; t++ ){
                                     result[ lessonNums[l] ].right_sentences += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right_sentences )
                                     result[ lessonNums[l] ].wrong_sentences += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong_sentences )
+                                    result[ lessonNums[l] ].right_words += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right_words )
+                                    result[ lessonNums[l] ].wrong_words += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong_words )
+                                    result[ lessonNums[l] ].replay += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].replay )
                                 }
                             }
                         }       
@@ -336,15 +339,22 @@ app.get('/api/allScore', MongoMiddleWare(
                                     if (lessonTimes[t] in result){
                                         result[ lessonTimes[t] ].right_sentences += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right_sentences )
                                         result[ lessonTimes[t] ].wrong_sentences += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong_sentences )
+                                        result[ lessonTimes[t] ].right_words += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right_words )
+                                        result[ lessonTimes[t] ].wrong_words += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong_words )
+                                        result[ lessonTimes[t] ].replay += Number( scores[ lessonNums[l] ][ lessonTimes[t] ].replay )
                                     } else {
                                         result[ lessonTimes[t] ] = { "right_sentences": Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right_sentences ) ,
-                                                                     "wrong_sentences": Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong_sentences )}
+                                                                     "wrong_sentences": Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong_sentences ) ,
+                                                                     "right_words": Number( scores[ lessonNums[l] ][ lessonTimes[t] ].right_words ) ,
+                                                                     "wrong_words": Number( scores[ lessonNums[l] ][ lessonTimes[t] ].wrong_words ) ,
+                                                                     "replay": Number( scores[ lessonNums[l] ][ lessonTimes[t] ].replay )
+                                                                 }
                                     }
                                 }
                             }
                         }
                     }
-
+                    console.log( result )
                     // When score is empty for today
                     msg = "SUCCESS All scores successfully loaded from dB"
                     console.log(msg);
@@ -368,13 +378,13 @@ app.post("/api/auth", Oauth2MiddleWare(
         var msg = ""
         //var name = keys.name,
         var email = keys.email;
-
+        var emailCRC = keys.emailCRC;
         // Get Mongo Instances
         MongoMiddleWare(function(req,res,db){
 
             // Find if user information exists
             // Idea - check how many times they logged in? Like, record log-in time?
-            db.collection("userInfo").find({"GUserId":userid}, 
+            db.collection("userInfo").find({"emailCRC": emailCRC}, 
                 function(err, cursor){
 
                     if (err) {
@@ -403,10 +413,8 @@ app.post("/api/auth", Oauth2MiddleWare(
                                 
                                 db.collection("userInfo").insert({
                                     "SBUserId": SBUserId,
-                                    "GUserId": userid,
+                                    "emailCRC": emailCRC,
                                     //"name": name,
-                                    "email": email,
-                                    "locale": payload.locale,
                                     "score": {}
                                 }, function(err,result){
                                     
@@ -428,55 +436,62 @@ app.post("/api/auth", Oauth2MiddleWare(
 ))
 
 // Check if user is redirected to the right page.
-app.get( "/api/client_match", Oauth2MiddleWare(
+app.get( "/api/client_match", MongoMiddleWare( 
+    function(req,res,db){
+
+    var emailCRC = req.query.emailCRC; // google userId, not SBUserId
+    var SBUserId = req.query.SBUserId;
+    var msg = ""
+
+    db.collection("userInfo").find({"emailCRC":emailCRC}, function(err, cursor){
+        if (err) {
+                msg = "ERROR Could not get user information: " + err; console.log(msg); 
+                res.status(500).send(msg)
+                return
+        }
+
+        cursor.toArray(function(err, docs){
+
+            if (docs.length > 0 && docs[0]["SBUserId"]==SBUserId){
+                // google Id and SB User Id match --> you may stay
+                msg = "SUCCESS UserId matches with CRC"
+                res.status(200).send({ msg: msg, redirect: null })
+                res.end()
+                db.close()
+                return
+            } else if ( docs.length > 0 && docs[0]["SBUserId"]!=SBUserId ){
+                // Google Id and SB User Id mismatch --> you redirected to right SBUID
+                var redirectURL = '/lessons?userId=' + encodeURIComponent(docs[0]["SBUserId"]);
+                msg = "ERROR UserId mismatched with CRC. Redirected to " + redirectURL;
+                res.status(303).send({ msg: msg,
+                    redirect: redirectURL
+                });
+                res.end()
+                db.close()
+                return
+            } else{
+                // Google Id nor SB UID in our dB --> Hello Unauthorized user. plz go to the login page.
+                msg = "ERROR Unauthorized user. Redirecting to login page."
+                res.status(403).send({ msg: msg, redirect: '/' });
+                res.end()
+                db.close()
+                return
+            }
+        })
+    })
+}))
+
+/*Oauth2MiddleWare(
     function(req, res, keys, login) {
 
         var payload = login.getPayload();
-        var GUserid = payload['sub']; // google userId, not SBUserId
+        var emailCRC = keys.emailCRC; // google userId, not SBUserId
         var SBUserId = keys.SBUserId;
         var msg = ""
-
-        MongoMiddleWare( function(req,res,db){
-
-            db.collection("userInfo").find({"GUserId":GUserid}, function(err, cursor){
-                if (err) {
-                        msg = "ERROR Could not get user information: " + err; console.log(msg); 
-                        res.status(500).send(msg)
-                        return
-                }
-
-                cursor.toArray(function(err, docs){
-
-                    if (docs.length > 0 && docs[0]["SBUserId"]==SBUserId){
-                        // google Id and SB User Id match --> you may stay
-                        msg = "SUCCESS UserId matches with Google Id"
-                        res.status(200).send({ msg: msg, redirect: null })
-                        res.end()
-                        db.close()
-                        return
-                    } else if ( docs.length > 0 && docs[0]["SBUserId"]!=SBUserId ){
-                        // Google Id and SB User Id mismatch --> you redirected to right SBUID
-                        var redirectURL = '/lessons?userId=' + encodeURIComponent(docs[0]["SBUserId"]);
-                        msg = "ERROR UserId mismatched with Google Id. Redirected to " + redirectURL;
-                        res.status(303).send({ msg: msg,
-                            redirect: redirectURL
-                        });
-                        res.end()
-                        db.close()
-                        return
-                    } else{
-                        // Google Id nor SB UID in our dB --> Hello Unauthorized user. plz go to the login page.
-                        msg = "ERROR Unauthorized user. Redirecting to login page."
-                        res.status(403).send({ msg: msg, redirect: '/' });
-                        res.end()
-                        db.close()
-                        return
-                    }
-                })
-            })
-        })(req,res)
+        console.log(emailCRC)
+        )(req,res)
     }
-))
+))*/
 
 
 app.listen( argv.port, function() {

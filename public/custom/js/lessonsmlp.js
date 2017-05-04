@@ -46,58 +46,58 @@ function signOut() {
               window.location = "/" ; 
             });
         }
+
+var makeCRCTable = function(){
+    var c;
+    var crcTable = [];
+    for(var n =0; n < 256; n++){
+        c = n;
+        for(var k =0; k < 8; k++){
+            c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+        }
+        crcTable[n] = c;
+    }
+    return crcTable;
+}
+
+var crc32 = function(str) {
+    var crcTable = window.crcTable || (window.crcTable = makeCRCTable());
+    var crc = 0 ^ (-1);
+
+    for (var i = 0; i < str.length; i++ ) {
+        crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
+    }
+
+    return (crc ^ (-1)) >>> 0;
+};
+
 // Initiate Google Client (  )
-/*
 var initClient = function() {
+	if (localStorage["SBUser-curr-email"] != undefined){
+		$.ajax({
+			type:"get",
+			url:"/api/client_match",
+			data: { SBUserId: QueryString["userId"], "emailCRC": crc32(localStorage["SBUser-curr-email"]) },
+			success: function( data ){
+				
+				console.log(data.msg);
+				
+				load_jsonData( "Korean_lessons.json", function(data){
+					showAbout();
+					console.log("Data Loaded");
+					build_sublists('lesson-list', data);
+				});
 
-    gapi.load('auth2', function(){
-
-        auth2 = gapi.auth2.init({
-            client_id: '460158204141-aclb43a70l448iehp8s2u1u2c25f8dt7.apps.googleusercontent.com'
-        }).then( function( auth ){
-        	
-        	// Erase this after making sign out button
-        	auth2 = auth
-        	GoogleUser = auth.currentUser.get();
-        	if (GoogleUser.isSignedIn() == true){
-			    var id_token = GoogleUser.getAuthResponse().id_token;
-
-			    // Ajax call to verify userid and GID of the current user
-			    $.ajax({
-			    	type:"get",
-			    	url:"/api/client_match",
-			    	data: { SBUserId: QueryString["userId"], "idtoken":id_token },
-			    	success: function( data ){
-			    		
-			    		console.log(data.msg);
-			    		
-			    		load_jsonData( "Korean_lessons.json", function(data){
-							showAbout();
-							console.log("Data Loaded");
-							build_sublists('lesson-list', data);
-						});
-
-			    	}, error: function( err ){
-			    		
-			    		window.location = err.responseJSON.redirect;
-			    		console.log(err.responseJSON.msg);
-			    	}
-			    })
-
-			} else {
-				console.log('User not logged-in.');
-				window.location = "/"
+			}, error: function( err ){
+				
+				window.location = err.responseJSON.redirect;
+				console.log(err.responseJSON.msg);
 			}
-        }, function( err ){
-        	console.log("ERROR: failed to initialize authentication")
-        	console.log(err)
-        });
-
-
-    });
-
+		})
+	} else {
+		console.log( "Not enough information to verify user." )
+	}
 }();
-*/
 
 // Track mouse position in pixels (for tooltip)
 var cursorX, cursorY
@@ -115,14 +115,6 @@ String.prototype.replaceAll = function(search, replacement) {
 // Setup global variable audioContext
 window.AudioContext = window.AudioContext||window.webkitAudioContext;
 var audioContext = new AudioContext();
-
-// Initiate the page
-load_jsonData( "Korean_lessons.json", function(data){
-							showAbout();
-							console.log("Data Loaded");
-							build_sublists('lesson-list', data);
-						});
-
 
 //////////////////// Layout /////////////////////////////*****
 
@@ -342,6 +334,48 @@ var showLessonMenu = function( sentences, lessonNum ) {
 
 }
 
+var getScore = function ( lessonNum, timestamp, callback) {
+
+	/*
+	lessonNum  	  : Lesson number in form of 'Lesson #'
+	timestamp     : epoch timestamp of today (in UTC)
+	*/
+	
+	$.ajax({
+		url: "/api/score",
+		type: "get",
+		data: { "userId": QueryString['userId'] , "lessonNum": lessonNum, "timestamp": timestamp },  // lessonNum: in form of "lessonX" - X: Integer. Potentially add timestamp?
+		success: function(data){ callback(data) },
+		error: function(err) {
+			console.log(err)
+		}
+	})
+}
+
+var recordScore = function ( lessonNumber, timestamp, right_sentences, wrong_sentences, right_words, wrong_words, replay) {
+	/*
+	lessonNumber  : Lesson number in form of 'Lesson #'
+	timestamp     : epoch timestamp of today (in UTC)
+	right   	  : Number of right answers
+	wrong 		  : Number of wrong answers
+	*/
+
+	$.ajax({
+		url: "/api/recordScore",
+		type: "post",
+		data: { "userId" : QueryString['userId'], "lessonNum": lessonNumber, "timestamp": timestamp, 
+		"right_sentences": right_sentences, "wrong_sentences": wrong_sentences, "right_words": right_words,
+		"wrong_words": wrong_words, "replay": replay},
+
+		success: function(data){
+			console.log( " Score updated " )
+		},
+		error: function(err) {
+			console.error(err)
+		}
+	})
+}
+
 var showQuiz = function( lessonNum ) {
 
 	//var lessonNum = Number( d3.select(".lesson-header").text().split(" ")[1] )
@@ -524,62 +558,7 @@ var showQuiz = function( lessonNum ) {
 			d3.select(".replay-counts").attr("data") )
 	}
 
-	var recordScore = function ( lessonNumber, timestamp, right_sentences, wrong_sentences, right_words, wrong_words, replay) {
-		/*
-		lessonNumber  : Lesson number in form of 'Lesson #'
-		timestamp     : epoch timestamp of today (in UTC)
-		right   	  : Number of right answers
-		wrong 		  : Number of wrong answers
-		*/
-
-		$.ajax({
-			url: "/api/recordScore",
-			type: "post",
-			data: { "userId" : QueryString['userId'], "lessonNum": lessonNumber, "timestamp": timestamp, 
-			"right_sentences": right_sentences, "wrong_sentences": wrong_sentences, "right_words": right_words,
-			"wrong_words": wrong_words, "replay": replay},
-
-			success: function(data){
-				console.log( " Score updated " )
-			},
-			error: function(err) {
-				console.error(err)
-			}
-		})
-	}
-
 	// Get Current score for today
-	var getScore = function ( lessonNum, timestamp ) {
-
-		/*
-		lessonNum  	  : Lesson number in form of 'Lesson #'
-		timestamp     : epoch timestamp of today (in UTC)
-		*/
-		
-		$.ajax({
-			url: "/api/score",
-			type: "get",
-			data: { "userId": QueryString['userId'] , "lessonNum": lessonNum, "timestamp": timestamp },  // lessonNum: in form of "lessonX" - X: Integer. Potentially add timestamp?
-			success: function(data){
-				console.log(data)
-								
-				d3.select(".score-right_sentences").text( "Right answers: " + data.right_sentences )
-					.attr("data", data.right_sentences)
-				d3.select(".score-wrong_sentences").text( "Wrong answers: " + data.wrong_sentences )
-					.attr("data", data.wrong_sentences)
-				d3.select(".score-right_words").text( "Right words: " + data.right_words )
-					.attr("data", data.right_words)
-				d3.select(".score-wrong_words").text( "Wrong words: " + data.wrong_words )
-					.attr("data", data.wrong_words)
-				d3.select(".replay-counts").text( "Replays: " + data.replay )
-					.attr("data", data.replay)
-
-			},
-			error: function(err) {
-				console.log(err)
-			}
-		})
-	}
 
 	input_div.append("div").style("text-align", "center")
 				.append("p")
@@ -611,8 +590,20 @@ var showQuiz = function( lessonNum ) {
 
 	var now = new Date().getTime() / 1000; // Current timestamp in seconds
 	var today = now - (now % (60*60*24));
-	getScore( lessonNum.replace("lesson ", "lesson"), today )
-
+	getScore( lessonNum.replace("lesson ", "lesson"), today, function(data) { 
+		console.log(data)
+						
+		d3.select(".score-right_sentences").text( "Right answers: " + data.right_sentences )
+			.attr("data", data.right_sentences)
+		d3.select(".score-wrong_sentences").text( "Wrong answers: " + data.wrong_sentences )
+			.attr("data", data.wrong_sentences)
+		d3.select(".score-right_words").text( "Right words: " + data.right_words )
+			.attr("data", data.right_words)
+		d3.select(".score-wrong_words").text( "Wrong words: " + data.wrong_words )
+			.attr("data", data.wrong_words)
+		d3.select(".replay-counts").text( "Replays: " + data.replay )
+			.attr("data", data.replay)
+	})
 }
 
 var showAbout = function( ) {
@@ -669,30 +660,30 @@ var showInstruction = function( ) {
 	})
 };
 
+var getAllScore = function ( lessonNums, timeRange, keys, callback ) {
+
+	/*
+	lessonNums    : Lesson numbers, list of strings in form 'Lesson#'
+	*/
+	
+	$.ajax({
+		url: "/api/allScore",
+		type: "get",
+		data: { "userId": QueryString['userId'] , "timeRange": timeRange, "keys": keys, "lessonNums": lessonNums },  // lessonNum: in form of "lessonX" - X: Integer. Potentially add timestamp?
+		success: function(data){
+			console.log("Scores successfully loaded")
+
+			//$("#datastore").data( "allScore", data )
+			callback( data )
+
+		},
+		error: function(err) {
+			console.log(err)
+		}
+	})
+}
+
 var showProgress = function( data ) {
-
-	var getAllScore = function ( lessonNums, timeRange, keys, callback ) {
-
-		/*
-		lessonNums    : Lesson numbers, list of strings in form 'Lesson#'
-		*/
-		
-		$.ajax({
-			url: "/api/allScore",
-			type: "get",
-			data: { "userId": QueryString['userId'] , "timeRange": timeRange, "keys": keys, "lessonNums": lessonNums },  // lessonNum: in form of "lessonX" - X: Integer. Potentially add timestamp?
-			success: function(data){
-				console.log("Scores successfully loaded")
-				
-				//$("#datastore").data( "allScore", data )
-				callback( data )
-
-			},
-			error: function(err) {
-				console.log(err)
-			}
-		})
-	}
 
 	var plotScores = function( data ) {
 		console.log( data )
@@ -807,22 +798,6 @@ var showProgress = function( data ) {
 								.attr("id","chapter-multiple-selected")
 								.attr("multiple","multiple")
 
-	/*$('#chapter-multiple-selected').multiselect({
-		buttonClass: 'btn btn-default btn-navplot',
-		onChange: function(option,checked){
-			var value = $(option).val();
-
-			if (checked == true) {
-			
-			}
-			else {
-
-			}},
-		buttonText: function(options, select) {
-    
-            }
-	}); */
-
 	optgroup = [];
 	for ( var i = 0 ; i < chapterNames.length; i++ ) {
 		var options = [];
@@ -848,12 +823,12 @@ var showProgress = function( data ) {
 	    		stackedBarChart( svg_lpp, margin_lpp, layer_lpp, data_mod )
     		})
 
-        	getAllScore( $('#chapter-multiple-selected').val(), [startTime, endTime], "date", function(data){
-	    		//var data_mod = $.map( data, function( value, index) { return [{"lesson": index.replace("lesson","과 "), "score": value}] } );
-	    		//stackedBarChart( svg_lpp, margin_lpp, layer_lpp, data_mod )
+        	/*getAllScore( $('#chapter-multiple-selected').val(), [startTime, endTime], "date", function(data){
+	    		var data_mod = $.map( data, function( value, index) { return [{"lesson": index.replace("lesson","과 "), "score": value}] } );
+	    		stackedBarChart( svg_lpp, margin_lpp, layer_lpp, data_mod )
 
 	    		console.log("wawawa", data)
-    		})
+    		})*/
         }
 	});
     $('#chapter-multiple-selected').multiselect('dataprovider', optgroup);
@@ -913,8 +888,55 @@ var showProgress = function( data ) {
 					.attr("class", "svg-lpp well")
 					.style("height", "90%"),
 		margin_lpp = {top: 40, right: 60, bottom: 20, left: 20},
-		layer_lpp = ["right", "wrong"];
+		layer_lpp = ["right_sentences", "wrong_sentences"];
 
+
+	// Add column to display table and percentages
+	var col_table = plotPanel.append('div')
+						.attr("class", "col-md-6")
+						.style("height", "50%")
+						.style("overflow-y","auto")
+
+	var score_table = col_table.append( "table" )
+						.attr("class", "table table-hover table-bordered")
+						.attr("id" , "score-table")
+						.style("margin-top","25px")
+
+	scoreTable( score_table )	
+
+}
+
+var scoreTable = function ( table ) {
+
+	var table_header = table.append("tr");
+
+	table_header.append("th").text("강의 번호")
+	table_header.append("th").text("정답률 (문장)")
+	table_header.append("th").text("정답률 (단어)")
+	table_header.append("th").text("반복 회수")
+
+	var lesson_list = ["lesson1", "lesson2", "lesson3", "lesson4", "lesson5", "lesson6", "lesson7", "lesson8", "lesson9", "lesson10", "lesson11", "lesson12", "lesson13", "lesson14", "lesson15", "lesson16", "lesson17", "lesson18", "lesson19", "lesson20", "lesson21", "lesson22", "lesson23", "lesson24", "lesson25", "lesson26", "lesson27", "lesson28", "lesson29", "lesson30", "lesson31", "lesson32", "lesson33", "lesson34", "lesson35", "lesson36", "lesson37", "lesson38"]
+
+	getAllScore( lesson_list , [ 0, Math.round(new Date().getTime()/1000.0) ] , "lessons", function(data){
+		//console.log(data)
+
+		var data_mod = $.map( data , function (value, index) {return [{"lesson": index.replace("lesson","제 ") + "과", 
+			"p_sentences": (value.right_sentences + "/" + value.wrong_sentences) ,
+			"p_words": (value.right_words + "/" + value.wrong_words) , 
+			"replay": value.replay 	}]
+		})
+		
+		//console.log(data_mod)
+		
+		table.selectAll( "tr" )
+			.data( data_mod ).enter()
+			.append("tr")
+				.selectAll( "td" )
+				.data( function(d){ return $.map( d, function( v, i) { return [{  "value": v }]  } ) } ).enter()
+				.append("td").text( function(d){return d.value} )
+
+
+	})
 }
 
 var stackedBarChart = function( svg, margin, layer, data ) {
@@ -922,7 +944,8 @@ var stackedBarChart = function( svg, margin, layer, data ) {
 	//https://bl.ocks.org/mbostock/1134768
 
 	// Remove all other graphics on the svg
-	svg.selectAll("g").transition().duration(200).style("opacity", 0 ).remove()
+	//svg.selectAll("g").transition().duration(200).style("opacity", 0 ).remove()
+	svg.selectAll("g").remove()
 	d3.select(".tooltip-lpp").remove()
 
 	if (data.length == 0) {
@@ -961,7 +984,7 @@ var stackedBarChart = function( svg, margin, layer, data ) {
     		return {x: d.lesson, y: d.score[c]};
     	});
     }));
-	console.log(layers)
+	//console.log(layers)
 	x.domain(layers[0].map(function(d) { return d.x; }));
 	y.domain([0, d3.max(layers[layers.length - 1], function(d) { return d.y0 + d.y; })]).nice();
 

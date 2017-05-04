@@ -1,0 +1,29 @@
+{
+  "name": "multipicker",
+  "version": "1.1.1",
+  "description": "Multipicker is jQuery plugin for elements selecting using mouse clicks and drag, supports multi selecting.",
+  "main": "multipicker.js",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/styopdev/multiPicker.git"
+  },
+  "keywords": [
+    "rangepicker",
+    "picker",
+    "selectable",
+    "form",
+    "checkbox"
+  ],
+  "author": "Stepan <styopdev@hotmail.com>",
+  "license": "MIT ",
+  "bugs": {
+    "url": "https://github.com/styopdev/multiPicker/issues"
+  },
+  "homepage": "http://styopdev.github.io/multiPicker",
+  "devDependencies": {
+    "gulp-qunit": "^1.5.0"
+  }
+}
