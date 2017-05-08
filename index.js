@@ -374,7 +374,7 @@ app.post("/api/auth", Oauth2MiddleWare(
     function( req, res, keys, login){
 
         var payload = login.getPayload();
-        var userid = payload['sub']; // google userId, not SBUserId
+        var userid = payload['sub']; // google userId, not SB UserId
         var msg = ""
         //var name = keys.name,
         var email = keys.email;
@@ -414,7 +414,6 @@ app.post("/api/auth", Oauth2MiddleWare(
                                 db.collection("userInfo").insert({
                                     "SBUserId": SBUserId,
                                     "emailCRC": emailCRC,
-                                    //"name": name,
                                     "score": {}
                                 }, function(err,result){
                                     
