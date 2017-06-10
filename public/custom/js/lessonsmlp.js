@@ -1052,10 +1052,14 @@ var removeLessons = function() {
 
 var loadSoundFile = function( sentenceString, gender, lessonNum ) {
 
-	sentenceString = sentenceString.replace(',','')
-	sentenceString = sentenceString.replace('!','')
-	sentenceString = sentenceString.replace('?','')
-	sentenceString = sentenceString.replace('.','')
+	sentenceString = sentenceString.replaceAll(',','')
+	sentenceString = sentenceString.replaceAll('!','')
+	sentenceString = sentenceString.replaceAll('?','')
+	sentenceString = sentenceString.replaceAll('.','')
+	sentenceString = sentenceString.replaceAll('~','')
+	sentenceString = sentenceString.replaceAll('‘','')
+	sentenceString = sentenceString.replaceAll('’','')
+	sentenceString = sentenceString.replaceAll("'",'')
 
 	var filename = sentenceString + "_" + gender +".wav";
 	var lessonname = lessonNum.replace(' ', '') // d3.select('.lesson-header').text().toLowerCase().replace(' ','');
