@@ -27,6 +27,12 @@ var fs = require('fs');
 var jsonfile = require( 'jsonfile' ); // to get local json data. Can use custom database instead, but for simplicity..
 var MongoClient = require('mongodb').MongoClient;
 
+// Standard Login
+var bcrypt = require("bcryptjs");
+var expressValidator = require( "express-validator" );
+var passport = require("passport");
+var LocalStrategy = require("passport-local").Strategy;
+
 // google authentication
 var GoogleAuth = require("google-auth-library"); 
 
@@ -156,6 +162,23 @@ var dir = path.resolve( argv.dir);
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({ extended: true , limit : '50mb' }));
 app.use( '/',  express.static( path.join( dir, 'public' ) ) );
+
+app.use(expressValidator({
+  errorFormatter: function(param, msg, value) {
+      var namespace = param.split('.')
+      , root    = namespace.shift()
+      , formParam = root;
+ 
+    while(namespace.length) {
+      formParam += '[' + namespace.shift() + ']';
+    }
+    return {
+      param : formParam,
+      msg   : msg,
+      value : value
+    };
+  }
+}));
 
 app.get( '/',  function( req, res ) {
     res.sendFile( path.join( dir, 'public', 'index.html' ) );
@@ -480,17 +503,120 @@ app.get( "/api/client_match", MongoMiddleWare(
     })
 }))
 
-/*Oauth2MiddleWare(
-    function(req, res, keys, login) {
+//register a new user
+/*app.post('/register', function(req,res){
+    var email=req.body.email;
+    var firstname=req.body.firstname;
+    var lastname=req.body.lastname;
+    var passwd=req.body.passwd;
+    var passwd2=req.body.passwd2;
+    var icode=req.body.icode;
+    req.checkBody('email', 'Email is required').notEmpty();
+    req.checkBody('email', 'Enter a valid email').isEmail();
+    req.checkBody('firstname', 'First name is required').notEmpty();
+    req.checkBody('lastname', 'Last name is required').notEmpty();
+    req.checkBody('passwd', 'Password required').notEmpty();
+    req.checkBody('passwd2', 'Passwords must match').equals(req.body.passwd);
+    req.getValidationResult().then(function(result){;
+        var errors = result.array();
+        if(errors.length > 0) {
+               console.log(errors);
+           res.redirect('/', {errors:errors});
+        } else {
+            console.log('Successfully registered');
+            
+            //Create user in mongodb
+            //res.redirect("/lessons");
+            
+            MongoMiddleWare( function(req, res, db){
 
-        var payload = login.getPayload();
-        var emailCRC = keys.emailCRC; // google userId, not SBUserId
-        var SBUserId = keys.SBUserId;
-        var msg = ""
-        console.log(emailCRC)
-        )(req,res)
-    }
-))*/
+                console.log("Initiated Mongo Instance")
+                
+                // Hash password
+                bcrypt.genSalt(10, function(err, salt){
+                    bcrpyt.hash( passwd, salt, function(err, hash){
+                        db.collection("userInfo").count( function(err,count){
+                            var SBUserId = String(count+1);
+
+                            db.collection("userInfo").insert({
+                                "SBUserId": SBUserId,
+                                "emailCRC": crc32(email),
+                                "score": {},
+                                "passwd": hash
+                            } , function( err, result ) {
+                                if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
+                                msg = "SUCCESS New user registered with userId: " + SBUserId;
+                                console.log( msg )
+                                res.status(200).send({msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
+                                res.end()
+                                db.close()
+                                return
+                            
+                            })
+                        })
+                    })
+                })
+            })
+        }
+    })
+});*/
+
+/////
+
+app.post('/register', MongoMiddleWare( function(req,res, db){
+    var email=req.body.email;
+    var emailCRC=req.body.emailCRC;
+    var firstname=req.body.firstname;
+    var lastname=req.body.lastname;
+    var passwd=req.body.passwd;
+    var passwd2=req.body.passwd2;
+    var icode=req.body.icode;
+    req.checkBody('email', 'Email is required').notEmpty();
+    req.checkBody('email', 'Enter a valid email').isEmail();
+    req.checkBody('firstname', 'First name is required').notEmpty();
+    req.checkBody('lastname', 'Last name is required').notEmpty();
+    req.checkBody('passwd', 'Password required').notEmpty();
+    req.checkBody('passwd2', 'Passwords must match').equals(req.body.passwd);
+    req.getValidationResult().then(function(result){;
+        var errors = result.array();
+        if(errors.length > 0) {
+               console.log(errors);
+           res.redirect('/', {errors:errors});
+        } else {
+            console.log('Successfully registered');
+            
+            //Create user in mongodb
+
+            // Hash password
+            bcrypt.genSalt(10, function(err, salt){
+                bcrypt.hash( passwd, salt, function(err, hash){
+                    db.collection("userInfo").count( function(err,count){
+                        var SBUserId = String(count+1);
+
+                        db.collection("userInfo").insert({
+                            "SBUserId": SBUserId,
+                            "emailCRC": emailCRC,
+                            "score": {},
+                            "passwd": hash
+                        } , function( err, result ) {
+                            if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
+                            msg = "SUCCESS New user registered with userId: " + SBUserId;
+                            console.log( msg )
+                            res.status(200).send({msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
+                            res.end()
+                            db.close()
+                            return
+                        
+                        })
+                    })
+                })
+            })
+        }
+    })
+}));
+
+
+////
 
 
 app.listen( argv.port, function() {

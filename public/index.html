@@ -12,8 +12,14 @@
     <link rel="stylesheet" href = 'components/bootstrap/dist/css/bootstrap.min.css'>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
+    
+    <!-- Google API -->
     <script src="https://apis.google.com/js/platform.js" async defer></script>
     <meta name="google-signin-client_id" content="460158204141-aclb43a70l448iehp8s2u1u2c25f8dt7.apps.googleusercontent.com">
+    
+    <!-- Naver log-in -->
+    <script type="text/javascript" src="https://static.nid.naver.com/js/naverLogin_implicit-1.0.3.js" charset="utf-8"></script>
+
     <style type="text/css">
       .panel-heading-SB {
         background-color: #ffc526;
@@ -63,9 +69,12 @@
                                 <div style="margin-top:10px" class="form-group">
                                     <!-- Button -->
 
+                                    <!-- Sign-in Buttons -->
                                     <div class="col-sm-12 controls">
+                                      
                                       <a id="btn-login" href="#" class="btn btn-success">Login  </a>
                                       <div href = "#" class="g-signin2" data-onsuccess="onSignIn"></div>
+                                      <div id="naver_id_login"></div>
 
                                     </div>
                                 </div>
@@ -129,6 +138,13 @@
                                         <input type="password" class="form-control" name="passwd" placeholder="Password">
                                     </div>
                                 </div>
+
+                                <div class="form-group">
+                                    <label for="password" class="col-md-3 control-label">Confirm Password</label>
+                                    <div class="col-md-9">
+                                        <input type="password" class="form-control" name="passwd2" placeholder="Password">
+                                    </div>
+                                </div>
                                     
                                 <div class="form-group">
                                     <label for="icode" class="col-md-3 control-label">Invitation Code</label>
@@ -140,7 +156,7 @@
                                 <div class="form-group">
                                     <!-- Button -->                                        
                                     <div class="col-md-offset-3 col-md-9">
-                                        <button id="btn-signup" type="button" class="btn btn-info"><i class="icon-hand-right"></i> &nbsp Sign Up</button>
+                                        <button id="btn-signup" type="button" onclick="standardRegister()" class="btn btn-info"><i class="icon-hand-right"></i> &nbsp Sign Up</button>
                                         <span style="margin-left:8px;">or</span>  
                                     </div>
                                 </div>
@@ -213,6 +229,39 @@
 
         }
 
+        function standardRegister(req,res) {
+            var email = document.getElementsByName("email")[0].value;
+            var emailCRC = crc32(email);
+            var firstname = document.getElementsByName("firstname")[0].value;
+            var lastname = document.getElementsByName("lastname")[0].value;
+            var passwd = document.getElementsByName("passwd")[0].value;
+            var passwd2 = document.getElementsByName("passwd2")[0].value;
+            var icode = document.getElementsByName("icode")[0].value;
+
+                $.ajax({
+                        url: "/register",
+                        type: "post",
+                        data: { 'firstname':firstname, "lastname":lastname, "passwd":passwd, "passwd2":passwd2, "icode":icode, "email":email, "emailCRC": crc32(email) },
+                        success: function(data){
+                            console.log(data)
+                            localStorage.setItem("SBUser-curr-email", email)
+                            if (typeof(data.redirect) == "string") {
+                                window.location = data.redirect
+                            }
+
+                        },
+                        error: function(err){
+                        console.log("ERROR popped up")
+                        window.location = "/"
+                    }
+                })
+
+        }
+
+        function standardLogin() {
+
+        }
+
         var makeCRCTable = function(){
             var c;
             var crcTable = [];
@@ -239,6 +288,18 @@
 
 
     </script>
+
+    <!-- JS for Naver Log-in -->
+    <script type="text/javascript">
+        var naver_id_login = new naver_id_login("YOUR_CLIENT_ID", "YOUR_CALLBACK_URL");
+        var state = naver_id_login.getUniqState();
+        naver_id_login.setButton("white", 2,40);
+        naver_id_login.setDomain("YOUR_SERVICE_URL");
+        naver_id_login.setState(state);
+        naver_id_login.setPopup();
+        naver_id_login.init_naver_id_login();
+    </script>
+
     <script src="https://www.google-analytics.com/analytics.js" async defer></script>
 </body>
 </html>

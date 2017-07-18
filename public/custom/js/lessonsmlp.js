@@ -183,7 +183,7 @@ var showLessonMenu = function( sentences, lessonNum ) {
 	// Add lesson title
 	content.append('h1')
 		.attr('class', 'lesson-header')
-		.text(lessonNum.replace("lesson","Lesson"))
+		.text(  lessonNum.replace("lesson","제") + "과"  )
 
 	var gbtn = content.append('div')
 		.attr('class', "gender-btns")
@@ -383,7 +383,7 @@ var showQuiz = function( lessonNum ) {
 	removeLessons();
 
 	var main_div = d3.select('.clearfix');
-	main_div.append("h1").text(lessonNum.replace("lesson","Lesson") + ": Quiz");
+	main_div.append("h1").text(  lessonNum.replace("lesson","제") + "과: 퀴즈"  );
 
 	// Append button back to lessons
 	var lessonButton = main_div.append("div")
@@ -812,6 +812,7 @@ var showProgress = function( data ) {
 		buttonClass: 'btn btn-default btn-navplot',
         enableClickableOptGroups: true,
         enableCollapsibleOptGroups: true,
+        nonSelectedText: "선택 안 됨",
         onChange: function(option, checked){
 
         	var currTimes = $("#progress_timerange").val().split(" - ");
@@ -921,13 +922,15 @@ var scoreTable = function ( table ) {
 		//console.log(data)
 
 		var data_mod = $.map( data , function (value, index) {return [{"lesson": index.replace("lesson","제 ") + "과", 
-			"p_sentences": (value.right_sentences + "/" + value.wrong_sentences) ,
-			"p_words": (value.right_words + "/" + value.wrong_words) , 
+			"p_sentences": (value.right_sentences + "/" + (value.right_sentences+value.wrong_sentences)) ,
+			"p_words": (value.right_words + "/" + (value.right_words + value.wrong_words)) , 
 			"replay": value.replay 	}]
 		})
 		
 		//console.log(data_mod)
 		
+		data_mod.unshift({})
+
 		table.selectAll( "tr" )
 			.data( data_mod ).enter()
 			.append("tr")
