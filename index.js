@@ -200,6 +200,11 @@ app.get( '/',  function( req, res ) {
 app.get( '/lessons', function( req, res ) {
     res.sendFile( path.join( dir, 'public', 'lessons_mlp.html' ) ); 
 })
+
+app.get( '/loader', function( req, res ) {
+    res.sendFile( path.join( dir, 'public', 'loader.html' ) ); 
+})
+
 app.post( "/what", function(req,res){
     res.redirect("/lessons");
 })
@@ -656,7 +661,62 @@ app.post('/login', MongoMiddleWare( function(req,res,db) {
 }));
 
 ////
+// Naver Login
+////
 
+app.post('/api/auth/naver', MongoMiddleWare( function(req,res, db){
+    var email=req.body.email;
+    var emailCRC=req.body.emailCRC;
+    var msg = ""
+    
+    // User successfully logged-in with Naver.
+    // Check if email already exists. If so, proceed. If not, register user info in DB.
+    db.collection("userInfo").find({"emailCRC":emailCRC}, function(err, cursor){
+        if (err) {
+            msg = "ERROR Could not get user information: " + err; console.log(msg); 
+            res.status(500).send(msg)
+            return
+        }
+        cursor.toArray(function(err, docs){
+
+            if (docs.length > 0 ){
+                // Already-existing user logged in successfully.
+                msg = "SUCCESS User successfully logged in"
+
+                // Get user's SBUserId
+                var SBUserId = docs[0]["SBUserId"];
+                res.status(200).send({ msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) }) 
+                res.end()
+                db.close()
+                return
+
+            } else {
+                // User not registered in our DB. Create new userinfo document in MongoDB
+                
+                db.collection("userInfo").count( function(err,count){
+                    
+                    var SBUserId = String(count+1);
+                    
+                    db.collection("userInfo").insert({
+                        "SBUserId": SBUserId,
+                        "emailCRC": emailCRC,
+                        "score": {}
+                    }, function(err,result){
+                        
+                        if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
+                        msg = "SUCCESS New user registered with userId: " + SBUserId;
+                        console.log( msg )
+                        res.status(200).send({msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
+                        res.end()
+                        db.close()
+                        return
+                        
+                    })
+                })
+            } 
+        })
+    })    
+}));
 
 app.listen( argv.port, function() {
     console.log('App running in localhost:' + argv.port);

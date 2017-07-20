@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+<head>
+    <title>스피치 바나나</title>
+    
+    <script type="text/javascript" src="https://static.nid.naver.com/js/naverLogin_implicit-1.0.3.js" charset="utf-8"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+    
+    <style>
+        .loader {
+            border: 16px solid #ffc526; /* SB Yellow */
+            border-top: 16px solid #f3f3f3; /* Light gray */
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
+            position: absolute;
+            top:0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+
+            margin: auto;
+
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="loader"></div>
+
+
+</div>
+
+<script type="text/javascript">
+    
+    var makeCRCTable = function(){
+        var c;
+        var crcTable = [];
+        for(var n =0; n < 256; n++){
+            c = n;
+            for(var k =0; k < 8; k++){
+                c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+            }
+            crcTable[n] = c;
+        }
+        return crcTable;
+    }
+    var crc32 = function(str) {
+        var crcTable = window.crcTable || (window.crcTable = makeCRCTable());
+        var crc = 0 ^ (-1);
+        for (var i = 0; i < str.length; i++ ) {
+            crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
+        }
+        return (crc ^ (-1)) >>> 0;
+    };
+
+    
+    var naver_id_login = new naver_id_login("SSF_MH89NSSK4eGwFp_r", "http://127.0.0.1:3000/loader");
+    // Print access Token
+    var id_token = naver_id_login.oauthParams.access_token;
+    // View Naver user profile 
+    naver_id_login.get_naver_userprofile("naverSignInCallback()");
+
+    // Callback function to deal with naver user profile info
+    function naverSignInCallback() {
+        var email = naver_id_login.getProfileData('email');
+
+        $.ajax({
+            url: "/api/auth/naver",
+            type: "post",
+            data: { "email": email, "idtoken": id_token, "emailCRC": crc32(email) },
+            success: function(data){
+                console.log(data.msg)
+                localStorage.setItem("SBUser-curr-email", email)
+                if (typeof(data.redirect) == "string") {
+                     window.location = data.redirect
+                }
+            },
+            error: function(err){
+                console.log("ERROR popped up")
+                window.location = "/"
+            }
+        })
+    }
+</script>
+
+</body>
+</html>

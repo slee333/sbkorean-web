@@ -321,20 +321,31 @@
             return (crc ^ (-1)) >>> 0;
         };
 
-
     </script>
-
     <!-- JS for Naver Log-in -->
     <script type="text/javascript">
-        var naver_id_login = new naver_id_login("YOUR_CLIENT_ID", "YOUR_CALLBACK_URL");
+
+        // Client ID exposed - any way to hide these? Creating separate credentials as json file, maybe.
+        var nclient_id= "SSF_MH89NSSK4eGwFp_r"
+        
+        // For local testing
+        //var ncallback_url = "http://127.0.0.1:3000/loader"
+        var ncallback_url = "http://127.0.0.1:3000/loader"
+        var naver_id_login = new naver_id_login( nclient_id , ncallback_url);
         var state = naver_id_login.getUniqState();
-        naver_id_login.setButton("white", 2,40);
-        naver_id_login.setDomain("YOUR_SERVICE_URL");
+
+        // Button styling
+        naver_id_login.setButton("white", 3,40);
+        //naver_id_login.setDomain("http://127.0.0.1:3000");
         naver_id_login.setState(state);
-        naver_id_login.setPopup();
+        
+        //naver_id_login.setPopup();
+        
         naver_id_login.init_naver_id_login();
     </script>
-
+    <!-- JS for Naver Login Callback -->
+    
     <script src="https://www.google-analytics.com/analytics.js" async defer></script>
+    
 </body>
 </html>
