@@ -591,8 +591,7 @@ app.post('/register', MongoMiddleWare( function(req,res, db){
             bcrypt.genSalt(10, function(err, salt){
                 bcrypt.hash( passwd, salt, function(err, hash){
                     db.collection("userInfo").count( function(err,count){
-                        var SBUserId = String(count+1);
-
+                        var SBUserId = String(count+1)
                         db.collection("userInfo").insert({
                             "SBUserId": SBUserId,
                             "emailCRC": emailCRC,
@@ -615,6 +614,21 @@ app.post('/register', MongoMiddleWare( function(req,res, db){
     })
 }));
 
+app.post('/login', MongoMiddleWare( function(req,res,db) {
+    var emailCRC = req.body.emailCRC;
+    var passwd = req.body.passwd;
+    	    db.collection("userInfo").find({"emailCRC":emailCRC}).toArray(function(err, result){
+		if(!result) {console.log("Invalid username or password");
+		} else{
+		    console.log(result)
+		    bcrypt.compare(passwd, result[0].passwd, function(error, isMatch){
+			if(error){ console.log('error')}
+		    	if(isMatch){res.status(200).send({msg:"Successful login", redirect:'/lessons?userId=' + encodeURIComponent(result[0].SBUserId)});
+			}else{console.log('invalid username or password')}
+		    })
+		}
+	    })
+}));
 
 ////
 
