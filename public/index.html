@@ -249,10 +249,15 @@
                             if (typeof(data.redirect) == "string") {
                                 window.location = data.redirect
                             }
-
                         },
                         error: function(err){
                         console.log("ERROR popped up")
+                        var errorArray = err.responseJSON;
+
+                        ///
+                        // Display error messages
+                        ///
+
                         window.location = "/"
                     }
                 })

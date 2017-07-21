@@ -596,51 +596,54 @@ app.post('/register', MongoMiddleWare( function(req,res, db){
     req.checkBody('passwd', 'Password required').notEmpty();
     req.checkBody('passwd2', 'Passwords must match').equals(req.body.passwd);
     req.getValidationResult().then(function(result){
+        if (result.array().length > 0) {
+            // Incorrect registration information. Return error messages
+            res.status(400).send( result.array() )
+        } else {
+            //check if email has been used
+            db.collection("userInfo").find({"emailCRC":emailCRC}).toArray(function(err, results){
+                if(results.length>0) {console.log("Account already registered under this email");
+                    console.log(results)
+                } else{
 
-	//check if email has been used
-	 db.collection("userInfo").find({"emailCRC":emailCRC}).toArray(function(err, results){
-		if(results.length>0) {console.log("Account already registered under this email");
-			console.log(results)
-		} else{
-
-
-	        var errors = result.array();
-	        if(errors.length > 0) {
-        	    console.log(errors);
-		    //send errors to browser so user knows which fields are incorrect
-		    //updateAlerts(req, res, errors)
-           	res.redirect('/', {errors:errors});
-     		} else {
-          	  console.log('Successfully registered');
-            
-          	//Create user in mongodb
-	    
-            	// Hash password
-            	bcrypt.genSalt(10, function(err, salt){
-                    bcrypt.hash( passwd, salt, function(err, hash){
-                        db.collection("userInfo").count( function(err,count){
-                            var SBUserId = String(count+1)
-                            db.collection("userInfo").insert({
-                                "SBUserId": SBUserId,
-                                "emailCRC": emailCRC,
-                                "score": {},
-                                "passwd": hash
-                            } , function( err, result ) {
-                                if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
-                                msg = "SUCCESS New user registered with userId: " + SBUserId;
-                                console.log( msg )
-                                res.status(200).send({msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
-                                res.end()
-                                db.close()
-                                return
-                        
-                                })
-                         })
-                    })
-                })
+                    var errors = result.array();
+                    if(errors.length > 0) {
+                        console.log(errors);
+                    //send errors to browser so user knows which fields are incorrect
+                    //updateAlerts(req, res, errors)
+                    res.redirect('/', {errors:errors});
+                    } else {
+                      console.log('Successfully registered');
+                    
+                    //Create user in mongodb
+                
+                        // Hash password
+                        bcrypt.genSalt(10, function(err, salt){
+                            bcrypt.hash( passwd, salt, function(err, hash){
+                                db.collection("userInfo").count( function(err,count){
+                                    var SBUserId = String(count+1)
+                                    db.collection("userInfo").insert({
+                                        "SBUserId": SBUserId,
+                                        "emailCRC": emailCRC,
+                                        "score": {},
+                                        "passwd": hash
+                                    } , function( err, result ) {
+                                        if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
+                                        msg = "SUCCESS New user registered with userId: " + SBUserId;
+                                        console.log( msg )
+                                        res.status(200).send({msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
+                                        res.end()
+                                        db.close()
+                                        return
+                                
+                                        })
+                                 })
+                            })
+                        })
+                    }
             }
-	}
-    })
+            })
+        }
     })
 }));
 
