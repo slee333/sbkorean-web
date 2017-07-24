@@ -107,18 +107,17 @@
                         <div class="panel-body" >
                             <form id="signupform" class="form-horizontal" role="form">
                                 
-                                <div id="signupalert" class="alert alert-danger">
-                                    <p id="signupalerts"></p>
-                                    <span></span>
-                                </div>
-                                    
-                                
                                   
                                 <div class="form-group">
                                     <label for="email" class="col-md-3 control-label">Email</label>
                                     <div class="col-md-9">
                                         <input type="text" class="form-control" name="email" placeholder="Email Address">
                                     </div>
+                                </div>
+                                
+				<div id="signupalert" name="email-err-div" style="text-align:center; display:none; color:red">
+                                    <p id="email-err"></p>
+                                    <span></span>
                                 </div>
                                     
                                 <div class="form-group">
@@ -127,18 +126,33 @@
                                         <input type="text" class="form-control" name="firstname" placeholder="First Name">
                                     </div>
                                 </div>
+				<div id="signupalert" name="firstname-err-div" style="text-align:center; display:none; color:red" >
+                                    <p id="firstname-err"></p>
+                                    <span></span>
+                                </div>
+                                
                                 <div class="form-group">
                                     <label for="lastname" class="col-md-3 control-label">Last Name</label>
                                     <div class="col-md-9">
                                         <input type="text" class="form-control" name="lastname" placeholder="Last Name">
                                     </div>
                                 </div>
+				<div id="signupalert" name="lastname-err-div" style="text-align:center;display:none;color:red">
+                                    <p id="lastname-err"></p>
+                                    <span></span>
+                                </div>
+                                
                                 <div class="form-group">
                                     <label for="password" class="col-md-3 control-label">Password</label>
                                     <div class="col-md-9">
                                         <input type="password" class="form-control" name="passwd" placeholder="Password">
                                     </div>
                                 </div>
+				<div id="signupalert" name="passwd-err-div" style="text-align:center; display:none; color:red">
+                                    <p id="passwd-err"></p>
+                                    <span></span>
+                                </div>
+                                
 
                                 <div class="form-group">
                                     <label for="password" class="col-md-3 control-label">Confirm Password</label>
@@ -146,6 +160,11 @@
                                         <input type="password" class="form-control" name="passwd2" placeholder="Password">
                                     </div>
                                 </div>
+				<div id="signupalert" name="passwd2-err-div" style="text-align:center; display:none; color:red">
+                                    <p id="passwd2-err"></p>
+                                    <span></span>
+                                </div>
+                                
                                     
                                 <div class="form-group">
                                     <label for="icode" class="col-md-3 control-label">Invitation Code</label>
@@ -215,7 +234,6 @@
                 type: "post",
                 data: { 'name': profile.getName(), "email": profile.getEmail(), "idtoken": id_token, "emailCRC": crc32(profile.getEmail()) },
                 success: function(data){
-                    console.log(data.msg)
                     localStorage.setItem("SBUser-curr-email", profile.getEmail())
                     if (typeof(data.redirect) == "string") {
                          window.location = data.redirect
@@ -244,7 +262,6 @@
                         type: "post",
                         data: { 'firstname':firstname, "lastname":lastname, "passwd":passwd, "passwd2":passwd2, "icode":icode, "email":email, "emailCRC": emailCRC },
                         success: function(data){
-                            console.log(data)
                             localStorage.setItem("SBUser-curr-email", email)
                             if (typeof(data.redirect) == "string") {
                                 window.location = data.redirect
@@ -253,12 +270,10 @@
                         error: function(err){
                         console.log("ERROR popped up")
                         var errorArray = err.responseJSON;
-
+			updateAlerts(errorArray);
                         ///
                         // Display error messages
                         ///
-
-                        window.location = "/"
                     }
                 })
 
@@ -268,14 +283,11 @@
 	    var email = document.getElementsByName("username")[0].value;
 	    var emailCRC = crc32(email);
 	    var passwd = document.getElementsByName("password")[0].value;
-	    console.log(emailCRC)
-	    console.log(passwd)
 		$.ajax({
 		        url: "/login",
                         type: "post",
                         data: { "passwd":passwd, "emailCRC": emailCRC },
                         success: function(data){
-                            console.log(data)
                             localStorage.setItem("SBUser-curr-email", email)
                             if (typeof(data.redirect) == "string") {
                                 window.location = data.redirect
@@ -290,15 +302,21 @@
         }
 
 	function updateAlerts(errors){
+	     document.getElementsByName("email-err-div")[0].style.display = "none";
+	     document.getElementsByName("firstname-err-div")[0].style.display = "none";
+	     document.getElementsByName("lastname-err-div")[0].style.display = "none";
+	     document.getElementsByName("passwd-err-div")[0].style.display = "none";
+	     document.getElementsByName("passwd2-err-div")[0].style.display = "none";
 	     console.log('updating alerts')
-	     console.log(errors)
 	     if(errors.length>0){
 		var message = ""
 		for (i=0; i < errors.length; i++){
-		    message += errors[i].msg + "<br>";
-		    console.log(message)
+		    message = errors[i].msg;
+		    document.getElementById(errors[i].param + "-err").innerHTML = "**" + message;
+		   
+		    document.getElementsByName(errors[i].param + "-err-div")[0].style.display = "inline";
 		}
-	 	document.getElementById("signupalerts").innerHTML = message;
+
 	    }
 	}
 

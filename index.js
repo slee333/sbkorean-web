@@ -593,7 +593,7 @@ app.post('/register', MongoMiddleWare( function(req,res, db){
     req.checkBody('email', 'Enter a valid email').isEmail();
     req.checkBody('firstname', 'First name is required').notEmpty();
     req.checkBody('lastname', 'Last name is required').notEmpty();
-    req.checkBody('passwd', 'Password required').notEmpty();
+    req.checkBody('passwd', 'Password is required').notEmpty();
     req.checkBody('passwd2', 'Passwords must match').equals(req.body.passwd);
     req.getValidationResult().then(function(result){
         if (result.array().length > 0) {
@@ -603,12 +603,11 @@ app.post('/register', MongoMiddleWare( function(req,res, db){
             //check if email has been used
             db.collection("userInfo").find({"emailCRC":emailCRC}).toArray(function(err, results){
                 if(results.length>0) {console.log("Account already registered under this email");
-                    console.log(results)
+		    res.status(400).send([{param:'email', msg:'Account already registered under this email'}])
                 } else{
 
                     var errors = result.array();
                     if(errors.length > 0) {
-                        console.log(errors);
                     //send errors to browser so user knows which fields are incorrect
                     //updateAlerts(req, res, errors)
                     res.redirect('/', {errors:errors});
