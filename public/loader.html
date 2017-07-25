@@ -38,29 +38,8 @@
 
 </div>
 
+<script src="custom/js/tools.js"></script>
 <script type="text/javascript">
-    
-    var makeCRCTable = function(){
-        var c;
-        var crcTable = [];
-        for(var n =0; n < 256; n++){
-            c = n;
-            for(var k =0; k < 8; k++){
-                c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
-            }
-            crcTable[n] = c;
-        }
-        return crcTable;
-    }
-    var crc32 = function(str) {
-        var crcTable = window.crcTable || (window.crcTable = makeCRCTable());
-        var crc = 0 ^ (-1);
-        for (var i = 0; i < str.length; i++ ) {
-            crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
-        }
-        return (crc ^ (-1)) >>> 0;
-    };
-
     
     var naver_id_login = new naver_id_login("SSF_MH89NSSK4eGwFp_r", "http://127.0.0.1:3000/loader");
     // Print access Token
@@ -77,11 +56,12 @@
             type: "post",
             data: { "email": email, "idtoken": id_token, "emailCRC": crc32(email) },
             success: function(data){
-                console.log(data.msg)
-                localStorage.setItem("SBUser-curr-email", email)
+                createCookie("sb_email", email)
+                createCookie("sb_secret", data.authHash)
                 if (typeof(data.redirect) == "string") {
                      window.location = data.redirect
                 }
+                
             },
             error: function(err){
                 console.log("ERROR popped up")
@@ -89,6 +69,8 @@
             }
         })
     }
+
+
 </script>
 
 </body>

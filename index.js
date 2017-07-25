@@ -204,10 +204,6 @@ app.get( '/lessons', function( req, res ) {
 app.get( '/loader', function( req, res ) {
     res.sendFile( path.join( dir, 'public', 'loader.html' ) ); 
 })
-
-app.post( "/what", function(req,res){
-    res.redirect("/lessons");
-})
     
 app.get( '/api/lessonData', function ( req, res) {
     getDataFile( req.query.filename, function( jsondata ) {
@@ -425,52 +421,59 @@ app.post("/api/auth", Oauth2MiddleWare(
 
             // Find if user information exists
             // Idea - check how many times they logged in? Like, record log-in time?
-            db.collection("userInfo").find({"emailCRC": emailCRC}, 
-                function(err, cursor){
+            bcrypt.genSalt(10, function(err, salt){
+                bcrypt.hash( email, salt, function(err, hashedUser){
 
-                    if (err) {
-                        msg = "ERROR Could not get user information: " + err; console.log(msg); 
-                        res.status(500).send(msg)
-                        return
-                    }
-                    cursor.toArray( function (err, docs ){
+                    db.collection("userInfo").find({"emailCRC": emailCRC}, 
+                        function(err, cursor){
 
-                        if (docs.length > 0) {
+                            if (err) {
+                                msg = "ERROR Could not get user information: " + err; console.log(msg); 
+                                res.status(500).send(msg)
+                                return
+                            }
+                            cursor.toArray( function (err, docs ){
 
-                            msg = "SUCCESS User successfully logged in";
-                            var SBUserId = docs[0]["SBUserId"];
-                            // Update login times? Idk. Send webpage
-                            res.status(200).send({ msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) }) 
-                            res.end()
-                            db.close()
-                            return
-                        }
-                        else{
-                            // Create new userinfo document
-                            
-                            db.collection("userInfo").count( function(err,count){
-                                
-                                var SBUserId = String(count+1);
-                                
-                                db.collection("userInfo").insert({
-                                    "SBUserId": SBUserId,
-                                    "emailCRC": emailCRC,
-                                    "score": {}
-                                }, function(err,result){
-                                    
-                                    if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
-                                    msg = "SUCCESS New user registered with userId: " + SBUserId;
-                                    console.log( msg )
-                                    res.status(200).send({msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
+                                if (docs.length > 0) {
+
+                                    msg = "SUCCESS User successfully logged in";
+                                    var SBUserId = docs[0]["SBUserId"];
+                                    // Update login times? Idk. Send webpage
+                                    res.status(200).send({ msg: msg, authHash: hashedUser, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) }) 
                                     res.end()
                                     db.close()
                                     return
+                                }
+                                else {
+                                    // Create new userinfo document
                                     
-                                })
+                                    db.collection("userInfo").count( function(err,count){
+                                        
+                                        var SBUserId = String(count+1);
+                                        
+                                        db.collection("userInfo").insert({
+                                            "SBUserId": SBUserId,
+                                            "emailCRC": emailCRC,
+                                            "score": {}
+                                        }, function(err,result){
+                                            
+                                            if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
+                                            msg = "SUCCESS New user registered with userId: " + SBUserId;
+                                            console.log( msg )
+                                            res.status(200).send({msg: msg, authHash: hashedUser, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
+                                            res.end()
+                                            db.close()
+                                            return
+                                            
+                                        })
+                                    })
+                                }
                             })
                         }
-                    })
+                    )
+                })
             })
+                    
         })(req,res)
     }
 ))
@@ -479,107 +482,62 @@ app.post("/api/auth", Oauth2MiddleWare(
 app.get( "/api/client_match", MongoMiddleWare( 
     function(req,res,db){
 
-    var emailCRC = req.query.emailCRC; // google userId, not SBUserId
+    var email= req.query.email; // email Id of a user
+    var emailCRC = req.query.emailCRC;
     var SBUserId = req.query.SBUserId;
+    var secret_client = req.query.secret; // Secret provided by client side
     var msg = ""
-
-    db.collection("userInfo").find({"emailCRC":emailCRC}, function(err, cursor){
-        if (err) {
-                msg = "ERROR Could not get user information: " + err; console.log(msg); 
-                res.status(500).send(msg)
-                return
+    bcrypt.compare( email, secret_client, function(error, isMatch) {
+        if (error) { 
+            msg += "ERROR Cannot match client email with secret"
         }
+        if ( isMatch ){
+            db.collection("userInfo").find({"emailCRC": emailCRC}, function(err, cursor){
+                if (err) {
+                        msg = "ERROR Could not get user information: " + err; console.log(msg); 
+                        res.status(500).send(msg)
+                        return
+                }
+                cursor.toArray(function(err, docs){
 
-        cursor.toArray(function(err, docs){
-
-            if (docs.length > 0 && docs[0]["SBUserId"]==SBUserId){
-                // google Id and SB User Id match --> you may stay
-                msg = "SUCCESS UserId matches with CRC"
-                res.status(200).send({ msg: msg, redirect: null })
-                res.end()
-                db.close()
-                return
-            } else if ( docs.length > 0 && docs[0]["SBUserId"]!=SBUserId ){
-                // Google Id and SB User Id mismatch --> you redirected to right SBUID
-                var redirectURL = '/lessons?userId=' + encodeURIComponent(docs[0]["SBUserId"]);
-                msg = "ERROR UserId mismatched with CRC. Redirected to " + redirectURL;
-                res.status(303).send({ msg: msg,
-                    redirect: redirectURL
-                });
-                res.end()
-                db.close()
-                return
-            } else{
-                // Google Id nor SB UID in our dB --> Hello Unauthorized user. plz go to the login page.
-                msg = "ERROR Unauthorized user. Redirecting to login page."
-                res.status(403).send({ msg: msg, redirect: '/' });
-                res.end()
-                db.close()
-                return
-            }
-        })
-    })
-}))
-
-//register a new user
-/*app.post('/register', function(req,res){
-    var email=req.body.email;
-    var firstname=req.body.firstname;
-    var lastname=req.body.lastname;
-    var passwd=req.body.passwd;
-    var passwd2=req.body.passwd2;
-    var icode=req.body.icode;
-    req.checkBody('email', 'Email is required').notEmpty();
-    req.checkBody('email', 'Enter a valid email').isEmail();
-    req.checkBody('firstname', 'First name is required').notEmpty();
-    req.checkBody('lastname', 'Last name is required').notEmpty();
-    req.checkBody('passwd', 'Password required').notEmpty();
-    req.checkBody('passwd2', 'Passwords must match').equals(req.body.passwd);
-    req.getValidationResult().then(function(result){;
-        var errors = result.array();
-        if(errors.length > 0) {
-               console.log(errors);
-           res.redirect('/', {errors:errors});
-        } else {
-            console.log('Successfully registered');
-            
-            //Create user in mongodb
-            //res.redirect("/lessons");
-            
-            MongoMiddleWare( function(req, res, db){
-
-                console.log("Initiated Mongo Instance")
-                
-                // Hash password
-                bcrypt.genSalt(10, function(err, salt){
-                    bcrpyt.hash( passwd, salt, function(err, hash){
-                        db.collection("userInfo").count( function(err,count){
-                            var SBUserId = String(count+1);
-
-                            db.collection("userInfo").insert({
-                                "SBUserId": SBUserId,
-                                "emailCRC": crc32(email),
-                                "score": {},
-                                "passwd": hash
-                            } , function( err, result ) {
-                                if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
-                                msg = "SUCCESS New user registered with userId: " + SBUserId;
-                                console.log( msg )
-                                res.status(200).send({msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
-                                res.end()
-                                db.close()
-                                return
-                            
-                            })
-                        })
-                    })
+                    if (docs.length > 0 && docs[0]["SBUserId"]==SBUserId){
+                        // google Id and SB User Id match --> you may stay
+                        msg = "SUCCESS UserId matches with CRC"
+                        res.status(200).send({ msg: msg, redirect: null })
+                        res.end()
+                        db.close()
+                        return
+                    } else if ( docs.length > 0 && docs[0]["SBUserId"]!=SBUserId ){
+                        // Google Id and SB User Id mismatch --> you redirected to right SBUID
+                        var redirectURL = '/lessons?userId=' + encodeURIComponent(docs[0]["SBUserId"]);
+                        msg = "ERROR UserId mismatched with CRC. Redirected to " + redirectURL;
+                        res.status(303).send({ msg: msg,
+                            redirect: redirectURL
+                        });
+                        res.end()
+                        db.close()
+                        return
+                    } else{
+                        // Google Id nor SB UID in our dB --> Hello Unauthorized user. plz go to the login page.
+                        msg = "ERROR Unauthorized user. Redirecting to login page."
+                        res.status(403).send({ msg: msg, redirect: '/' });
+                        res.end()
+                        db.close()
+                        return
+                    }
                 })
             })
+        } else {
+            // Provided client secret does not match with secret re-generated in server.
+            // Please do not try to hack :(
+            msg = "ERROR Unauthorized user. Redirecting to login page."
+            res.status(403).send({ msg: msg, redirect: '/' });
+            res.end()
+            db.close()
+            return
         }
     })
-});*/
-
-/////
+}))
 
 app.post('/register', MongoMiddleWare( function(req,res, db){
     var email=req.body.email;
@@ -619,24 +577,26 @@ app.post('/register', MongoMiddleWare( function(req,res, db){
                         // Hash password
                         bcrypt.genSalt(10, function(err, salt){
                             bcrypt.hash( passwd, salt, function(err, hash){
-                                db.collection("userInfo").count( function(err,count){
-                                    var SBUserId = String(count+1)
-                                    db.collection("userInfo").insert({
-                                        "SBUserId": SBUserId,
-                                        "emailCRC": emailCRC,
-                                        "score": {},
-                                        "passwd": hash
-                                    } , function( err, result ) {
-                                        if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
-                                        msg = "SUCCESS New user registered with userId: " + SBUserId;
-                                        console.log( msg )
-                                        res.status(200).send({msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
-                                        res.end()
-                                        db.close()
-                                        return
-                                
-                                        })
-                                 })
+                                bcrypt.hash( email, salt, function(err, hashedUser) {
+                                    db.collection("userInfo").count( function(err,count){
+                                        var SBUserId = String(count+1)
+                                        db.collection("userInfo").insert({
+                                            "SBUserId": SBUserId,
+                                            "emailCRC": emailCRC,
+                                            "score": {},
+                                            "passwd": hash
+                                        } , function( err, result ) {
+                                            if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
+                                            msg = "SUCCESS New user registered with userId: " + SBUserId;
+                                            console.log( msg )
+                                            res.status(200).send({msg: msg, authHash: hashedUser, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
+                                            res.end()
+                                            db.close()
+                                            return
+                                    
+                                            })
+                                     })
+                                })
                             })
                         })
                     }
@@ -648,18 +608,28 @@ app.post('/register', MongoMiddleWare( function(req,res, db){
 
 app.post('/login', MongoMiddleWare( function(req,res,db) {
     var emailCRC = req.body.emailCRC;
+    var email = req.body.email;
     var passwd = req.body.passwd;
-    	    db.collection("userInfo").find({"emailCRC":emailCRC}).toArray(function(err, result){
-		if(!result) {console.log("Invalid username or password");
-		} else{
-		    console.log(result)
-		    bcrypt.compare(passwd, result[0].passwd, function(error, isMatch){
-			if(error){ console.log('error')}
-		    	if(isMatch){res.status(200).send({msg:"Successful login", redirect:'/lessons?userId=' + encodeURIComponent(result[0].SBUserId)});
-			}else{console.log('invalid username or password')}
-		    })
-		}
-	    })
+
+    bcrypt.genSalt(10, function(err, salt){
+        bcrypt.hash( email, salt, function(err, hashedUser){
+            db.collection("userInfo").find({"emailCRC":emailCRC}).toArray(function(err, result){
+        		if(!result) {
+                    console.log("Invalid username or password");
+        		} else{
+        		    console.log(result)
+        		    bcrypt.compare(passwd, result[0].passwd, function(error, isMatch){
+        			    if( error ){ console.log('error')}
+        		    	if( isMatch ){
+                            res.status(200).send({msg:"Successful login", authHash: hashedUser, redirect:'/lessons?userId=' + encodeURIComponent(result[0].SBUserId)});
+        			    } else { 
+                            console.log('invalid username or password')
+                        }
+        		    })
+        		}
+            })
+        })
+    })
 }));
 
 
@@ -671,52 +641,69 @@ app.post('/api/auth/naver', MongoMiddleWare( function(req,res, db){
     
     // User successfully logged-in with Naver.
     // Check if email already exists. If so, proceed. If not, register user info in DB.
-    db.collection("userInfo").find({"emailCRC":emailCRC}, function(err, cursor){
-        if (err) {
-            msg = "ERROR Could not get user information: " + err; console.log(msg); 
-            res.status(500).send(msg)
-            return
-        }
-        cursor.toArray(function(err, docs){
+    bcrypt.genSalt(10, function(err, salt){
+        bcrypt.hash( email, salt, function(err, hashedUser){
+            db.collection("userInfo").find({"emailCRC":emailCRC}, function(err, cursor){
+                if (err) {
+                    msg = "ERROR Could not get user information: " + err; console.log(msg); 
+                    res.status(500).send(msg)
+                    return
+                }
+                cursor.toArray(function(err, docs){
 
-            if (docs.length > 0 ){
-                // Already-existing user logged in successfully.
-                msg = "SUCCESS User successfully logged in"
+                    if (docs.length > 0 ){
+                        // Already-existing user logged in successfully.
+                        msg = "SUCCESS User successfully logged in"
 
-                // Get user's SBUserId
-                var SBUserId = docs[0]["SBUserId"];
-                res.status(200).send({ msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) }) 
-                res.end()
-                db.close()
-                return
-
-            } else {
-                // User not registered in our DB. Create new userinfo document in MongoDB
-                
-                db.collection("userInfo").count( function(err,count){
-                    
-                    var SBUserId = String(count+1);
-                    
-                    db.collection("userInfo").insert({
-                        "SBUserId": SBUserId,
-                        "emailCRC": emailCRC,
-                        "score": {}
-                    }, function(err,result){
-                        
-                        if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
-                        msg = "SUCCESS New user registered with userId: " + SBUserId;
-                        console.log( msg )
-                        res.status(200).send({msg: msg, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
+                        // Get user's SBUserId
+                        var SBUserId = docs[0]["SBUserId"];
+                        res.status(200).send({ msg: msg, authHash: hashedUser , redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) }) 
                         res.end()
                         db.close()
                         return
+
+                    } else {
+                        // User not registered in our DB. Create new userinfo document in MongoDB
                         
-                    })
+                        db.collection("userInfo").count( function(err,count){
+                            
+                            var SBUserId = String(count+1);
+                            
+                            db.collection("userInfo").insert({
+                                "SBUserId": SBUserId,
+                                "emailCRC": emailCRC,
+                                "score": {}
+                            }, function(err,result){
+                                
+                                if (err) { msg = "ERROR Could not insert MongoDB Document"; console.log(msg); res.status(500).send(msg); }
+                                msg = "SUCCESS New user registered with userId: " + SBUserId;
+                                console.log( msg )
+                                res.status(200).send({msg: msg, authHash: hashedUser, redirect: '/lessons?userId=' + encodeURIComponent(SBUserId) });
+                                res.end()
+                                db.close()
+                                return
+                                
+                            })
+                        })
+                    } 
                 })
-            } 
+            })
         })
-    })    
+    })
 }));
+
+app.post( "/what", function(req,res){
+    var passwd = req.body.data
+    bcrypt.genSalt(10, function(err, salt){
+        bcrypt.hash( passwd, salt, function(err, hash){
+
+            res.status(200).send({"msg": "Success!", "hash": hash });
+            res.end()
+            return
+            
+        })
+    })
+})
 
 app.listen( argv.port, function() {
     console.log('App running in localhost:' + argv.port);

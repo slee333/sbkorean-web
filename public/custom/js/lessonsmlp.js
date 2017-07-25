@@ -39,61 +39,37 @@ var load_jsonData = function(filename, callback) {
 	}}
 )}
 
-function signOut() {
-            var auth2 = gapi.auth2.getAuthInstance();
-            auth2.signOut().then(function () {
-              console.log('User signed out.');
-              window.location = "/" ; 
-            });
-        }
-
-var makeCRCTable = function(){
-    var c;
-    var crcTable = [];
-    for(var n =0; n < 256; n++){
-        c = n;
-        for(var k =0; k < 8; k++){
-            c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
-        }
-        crcTable[n] = c;
-    }
-    return crcTable;
-}
-
-var crc32 = function(str) {
-    var crcTable = window.crcTable || (window.crcTable = makeCRCTable());
-    var crc = 0 ^ (-1);
-
-    for (var i = 0; i < str.length; i++ ) {
-        crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
-    }
-
-    return (crc ^ (-1)) >>> 0;
-};
-
 // Initiate Google Client (  )
 var initClient = function() {
-	if (localStorage["SBUser-curr-email"] != undefined){
-		$.ajax({
-			type:"get",
-			url:"/api/client_match",
-			data: { SBUserId: QueryString["userId"], "emailCRC": crc32(localStorage["SBUser-curr-email"]) },
-			success: function( data ){
-				
-				console.log(data.msg);
-				
-				load_jsonData( "Korean_lessons.json", function(data){
-					showAbout();
-					console.log("Data Loaded");
-					build_sublists('lesson-list', data);
-				});
+	var email = readCookie("sb_email");
+	var secret = readCookie("sb_secret");
 
-			}, error: function( err ){
-				
-				window.location = err.responseJSON.redirect;
-				console.log(err.responseJSON.msg);
-			}
-		})
+	if ( email != null){
+		if (secret != null ) {
+			$.ajax({
+				type:"get",
+				url:"/api/client_match",
+				data: { "SBUserId": QueryString["userId"], "email": email, "emailCRC": crc32(email), "secret": secret },
+				success: function( data ){
+					
+					console.log(data.msg);
+					
+					load_jsonData( "Korean_lessons.json", function(data){
+						showAbout();
+						console.log("Data Loaded");
+						build_sublists('lesson-list', data);
+					});
+
+				}, error: function( err ){
+					
+					window.location = err.responseJSON.redirect;
+					console.log(err.responseJSON.msg);
+				}
+			})
+		} else {
+			window.location = "/"
+			console.log( "Not enough information to verify user. Please retry" )
+		}
 	} else {
 		window.location = "/"
 		console.log( "Not enough information to verify user. Please retry" )

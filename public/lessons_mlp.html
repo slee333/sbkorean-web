@@ -139,7 +139,7 @@
 
     <script type="text/javascript" src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
-
+    <script src="custom/js/tools.js"></script>
     <script src="custom/js/lessonsmlp.js"></script>
     <script>
         
@@ -148,7 +148,8 @@
             auth2.signOut().then(function () {
               console.log('User signed out.');
             });
-            localStorage.removeItem("SBUser-curr-email")
+            eraseCookie("sb_email")
+            eraseCookie("sb_secret")
             window.location = "/"
         }
         function onLoad() {

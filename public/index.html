@@ -183,6 +183,7 @@
     <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.12.4.min.js"><\/script>')</script>
     <script src="components/bootstrap/dist/js/bootstrap.js"></script>
 
+    <script src="custom/js/tools.js"></script>
     <script>
         // Sign out in before page loads.
         window.onbeforeunload = function(e){
@@ -214,7 +215,8 @@
                 type: "post",
                 data: { 'name': profile.getName(), "email": profile.getEmail(), "idtoken": id_token, "emailCRC": crc32(profile.getEmail()) },
                 success: function(data){
-                    localStorage.setItem("SBUser-curr-email", profile.getEmail())
+                    createCookie("sb_email", profile.getEmail())
+                    createCookie("sb_secret", data.authHash)
                     if (typeof(data.redirect) == "string") {
                          window.location = data.redirect
                     }
@@ -241,7 +243,8 @@
                         type: "post",
                         data: { 'firstname':firstname, "lastname":lastname, "passwd":passwd, "passwd2":passwd2, "email":email, "emailCRC": emailCRC },
                         success: function(data){
-                            localStorage.setItem("SBUser-curr-email", email)
+                            createCookie("sb_email", email )
+                            createCookie("sb_secret", data.authHash)
                             if (typeof(data.redirect) == "string") {
                                 window.location = data.redirect
                             }
@@ -249,7 +252,7 @@
                         error: function(err){
                         console.log("ERROR popped up")
                         var errorArray = err.responseJSON;
-			updateAlerts(errorArray);
+			            updateAlerts(errorArray);
                         ///
                         // Display error messages
                         ///
@@ -265,9 +268,10 @@
 		$.ajax({
 		        url: "/login",
                         type: "post",
-                        data: { "passwd":passwd, "emailCRC": emailCRC },
+                        data: { "email":email, "passwd":passwd, "emailCRC": emailCRC },
                         success: function(data){
-                            localStorage.setItem("SBUser-curr-email", email)
+                            createCookie("sb_email", email )
+                            createCookie("sb_secret", data.authHash)
                             if (typeof(data.redirect) == "string") {
                                 window.location = data.redirect
                             }
@@ -298,31 +302,6 @@
 
 	    }
 	}
-
-        var makeCRCTable = function(){
-            var c;
-            var crcTable = [];
-            for(var n =0; n < 256; n++){
-                c = n;
-                for(var k =0; k < 8; k++){
-                    c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
-                }
-                crcTable[n] = c;
-            }
-            return crcTable;
-        }
-
-        var crc32 = function(str) {
-            var crcTable = window.crcTable || (window.crcTable = makeCRCTable());
-            var crc = 0 ^ (-1);
-
-            for (var i = 0; i < str.length; i++ ) {
-                crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
-            }
-
-            return (crc ^ (-1)) >>> 0;
-        };
-
     </script>
     <!-- JS for Naver Log-in -->
     <script type="text/javascript">
