@@ -25,6 +25,7 @@
         background-color: #ffc526;
         color: white;
       }
+
     </style>
 
 
@@ -33,10 +34,10 @@
 
     <div class="container">    
         <div id="loginbox" style="margin-top:50px;" class="mainbox col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2">                    
-            <div class="panel panel-info" >
-                    <div class="panel-heading-SB panel-heading">
-                        <div class="panel-title">Sign In</div>
-                        <div style="float:right; font-size: 80%; position: relative; top:-10px"><a href="#">Forgot password?</a></div>
+            <div class="panel panel-info" style ="border-color: #ffc526;" >
+                    <div class="panel-heading-SB panel-heading" style ="background-color: #ffc526; color: white;">
+                        <div class="panel-title"><b>로그인</b></div>
+                        <div style="float:right; font-size: 80%; position: relative; top:-10px; color: white;"><a href="#">비밀번호 찾기</a></div>
                     </div>     
 
                     <div style="padding-top:30px" class="panel-body" >
@@ -47,12 +48,12 @@
                                     
                             <div style="margin-bottom: 25px" class="input-group">
                                         <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
-                                        <input id="login-username" type="text" class="form-control" name="username" value="" placeholder="email">                                        
+                                        <input id="login-username" type="text" class="form-control" name="username" value="" placeholder="이메일 주소">                                        
                                     </div>
                                 
                             <div style="margin-bottom: 25px" class="input-group">
                                         <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
-                                        <input id="login-password" type="password" class="form-control" name="password" placeholder="password">
+                                        <input id="login-password" type="password" class="form-control" name="password" placeholder="비밀번호">
                                     </div>
                                     
 
@@ -60,7 +61,7 @@
                             <div class="input-group">
                                       <div class="checkbox">
                                         <label>
-                                          <input id="login-remember" type="checkbox" name="remember" value="1"> Remember me
+                                          <input id="login-remember" type="checkbox" name="remember" value="1"> 로그인 상태 유지
                                         </label>
                                       </div>
                                     </div>
@@ -84,9 +85,9 @@
                                 <div class="form-group">
                                     <div class="col-md-12 control">
                                         <div style="border-top: 1px solid#888; padding-top:15px; font-size:85%" >
-                                            Don't have an account! 
+                                            계정이 없으신가요?
                                         <a href="#" onClick="$('#loginbox').hide(); $('#signupbox').show()">
-                                            Sign Up Here
+                                            지금 가입하세요!
                                         </a>
                                         </div>
                                     </div>
@@ -99,19 +100,19 @@
                     </div>  
         </div>
         <div id="signupbox" style="display:none; margin-top:50px" class="mainbox col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2">
-                    <div class="panel panel-info">
-                        <div class="panel-heading">
-                            <div class="panel-title">Sign Up</div>
-                            <div style="float:right; font-size: 85%; position: relative; top:-10px"><a id="signinlink" href="#" onclick="$('#signupbox').hide(); $('#loginbox').show()">Sign In</a></div>
+                    <div class="panel panel-info" style="border-color: #ffc526">
+                        <div class="panel-heading" style ="background-color: #ffc526; color: white;"">
+                            <div class="panel-title"><b>회원가입</b></div>
+                            <div style="float:right; font-size: 85%; position: relative; top:-10px"><a id="signinlink" href="#" onclick="$('#signupbox').hide(); $('#loginbox').show()">로그인 페이지로</a></div>
                         </div>  
                         <div class="panel-body" >
                             <form id="signupform" class="form-horizontal" role="form">
                                 
                                   
                                 <div class="form-group">
-                                    <label for="email" class="col-md-3 control-label">Email</label>
+                                    <label for="email" class="col-md-3 control-label">이메일</label>
                                     <div class="col-md-9">
-                                        <input type="text" class="form-control" name="email" placeholder="Email Address">
+                                        <input type="text" class="form-control" name="email" placeholder="예: abcd@speechbanana.edu">
                                     </div>
                                 </div>
                                 
@@ -121,9 +122,9 @@
                                 </div>
                                     
                                 <div class="form-group">
-                                    <label for="firstname" class="col-md-3 control-label">First Name</label>
+                                    <label for="firstname" class="col-md-3 control-label">성</label>
                                     <div class="col-md-9">
-                                        <input type="text" class="form-control" name="firstname" placeholder="First Name">
+                                        <input type="text" class="form-control" name="firstname" placeholder="예: 길동">
                                     </div>
                                 </div>
 				<div id="signupalert" name="firstname-err-div" style="text-align:center; display:none; color:red" >
@@ -132,9 +133,9 @@
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="lastname" class="col-md-3 control-label">Last Name</label>
+                                    <label for="lastname" class="col-md-3 control-label">이름</label>
                                     <div class="col-md-9">
-                                        <input type="text" class="form-control" name="lastname" placeholder="Last Name">
+                                        <input type="text" class="form-control" name="lastname" placeholder="예: 홍">
                                     </div>
                                 </div>
 				<div id="signupalert" name="lastname-err-div" style="text-align:center;display:none;color:red">
@@ -143,9 +144,9 @@
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="password" class="col-md-3 control-label">Password</label>
+                                    <label for="password" class="col-md-3 control-label">비밀번호</label>
                                     <div class="col-md-9">
-                                        <input type="password" class="form-control" name="passwd" placeholder="Password">
+                                        <input type="password" class="form-control" name="passwd" placeholder="비밀번호">
                                     </div>
                                 </div>
 				<div id="signupalert" name="passwd-err-div" style="text-align:center; display:none; color:red">
@@ -155,9 +156,9 @@
                                 
 
                                 <div class="form-group">
-                                    <label for="password" class="col-md-3 control-label">Confirm Password</label>
+                                    <label for="password" class="col-md-3 control-label">비밀번호 재입력</label>
                                     <div class="col-md-9">
-                                        <input type="password" class="form-control" name="passwd2" placeholder="Password">
+                                        <input type="password" class="form-control" name="passwd2" placeholder="비밀번호 재입력">
                                     </div>
                                 </div>
 				<div id="signupalert" name="passwd2-err-div" style="text-align:center; display:none; color:red">
@@ -165,39 +166,18 @@
                                     <span></span>
                                 </div>
                                 
-                                    
-                                <div class="form-group">
-                                    <label for="icode" class="col-md-3 control-label">Invitation Code</label>
-                                    <div class="col-md-9">
-                                        <input type="text" class="form-control" name="icode" placeholder="">
-                                    </div>
-                                </div>
-
                                 <div class="form-group">
                                     <!-- Button -->                                        
                                     <div class="col-md-offset-3 col-md-9">
-                                        <button id="btn-signup" type="button" onclick="standardRegister();" class="btn btn-info"><i class="icon-hand-right"></i> &nbsp Sign Up</button>
-                                        <span style="margin-left:8px;">or</span>  
+                                        <button id="btn-signup" type="button" onclick="standardRegister();" class="btn btn-info"><i class="icon-hand-right"></i> &nbsp 가입하기</button>
                                     </div>
                                 </div>
-                                
-                                <div style="border-top: 1px solid #999; padding-top:20px"  class="form-group">
-                                    
-                                    <div class="col-md-offset-3 col-md-9">
-                                        <button id="btn-fbsignup" type="button" class="btn btn-primary"><i class="icon-facebook"></i>   Sign Up with Google</button>
-                                    </div>                                           
-                                        
-                                </div>
-                                
-                                
                                 
                             </form>
                          </div>
                     </div>
          </div> 
     </div>
-
-    <a href="#" onclick="signOut();">Sign out</a>
 
     <script src="http://code.jquery.com/jquery-1.12.4.min.js"></script>
     <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.12.4.min.js"><\/script>')</script>
@@ -255,12 +235,11 @@
             var lastname = document.getElementsByName("lastname")[0].value;
             var passwd = document.getElementsByName("passwd")[0].value;
             var passwd2 = document.getElementsByName("passwd2")[0].value;
-            var icode = document.getElementsByName("icode")[0].value;
 
                 $.ajax({
                         url: "/register",
                         type: "post",
-                        data: { 'firstname':firstname, "lastname":lastname, "passwd":passwd, "passwd2":passwd2, "icode":icode, "email":email, "emailCRC": emailCRC },
+                        data: { 'firstname':firstname, "lastname":lastname, "passwd":passwd, "passwd2":passwd2, "email":email, "emailCRC": emailCRC },
                         success: function(data){
                             localStorage.setItem("SBUser-curr-email", email)
                             if (typeof(data.redirect) == "string") {

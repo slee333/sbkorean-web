@@ -75,6 +75,10 @@
                         <li>
                             <a class="icon icon-params" id = "progress-page" href="#"> 진행상황 </a>
                         </li> <!-- Progress Page -->
+                        <!-- Sign out button-->
+                        <li>
+                            <a class="icon icon-key" id = "signout-button" onclick="signOut();" href="#"> 로그아웃 </a>
+                        </li>
                         <!-- Data analysis page - not present
                         <li>
                             <a class="icon icon-data" id = "data-analysis-page" href="#"> Data Analysis </a>
@@ -89,7 +93,10 @@
                 <div class="scroller-inner">
                     
                     <header class="codrops-header main-header">
-                        <p><a href="#" id="trigger" class="menu-trigger"> </a></p>
+                        <div>
+                        <p><a href="#" id="trigger" class="menu-trigger"></a></p>
+                        <p class="menu-text">메뉴</p>
+                        </div>
                         <h1> <b>스피치 바나나</b></h1>
                     </header>
 
@@ -134,6 +141,23 @@
     <script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
 
     <script src="custom/js/lessonsmlp.js"></script>
+    <script>
+        
+        function signOut() {
+            var auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut().then(function () {
+              console.log('User signed out.');
+            });
+            localStorage.removeItem("SBUser-curr-email")
+            window.location = "/"
+        }
+        function onLoad() {
+          gapi.load('auth2', function() {
+            gapi.auth2.init();
+          });
+        }
 
+    </script>
+    <script src="https://apis.google.com/js/platform.js?onload=onLoad" async defer></script>
 </body>
 </html>

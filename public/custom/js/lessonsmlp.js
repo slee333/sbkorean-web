@@ -95,7 +95,8 @@ var initClient = function() {
 			}
 		})
 	} else {
-		console.log( "Not enough information to verify user." )
+		window.location = "/"
+		console.log( "Not enough information to verify user. Please retry" )
 	}
 }();
 
@@ -139,7 +140,7 @@ var build_sublists = function( divid, data ){
 	lists.append('a')
 		.attr('class', "icon icon-wallet")
 		.attr('href', "#")
-		.html( function(d,i) { return "C" + (i+1) + ": " + chapterNames[i] })
+		.html( function(d,i) { return "제 " + (i+1) + "장: " + chapterNames[i] })
 
 	var divs = lists.append('div')
 		.attr('class', 'mp-level')
@@ -160,7 +161,7 @@ var build_sublists = function( divid, data ){
 			.append('li').append('a')
 			.attr('href', '#')
 			.html( function(d,i) { 
-				var title = 'L' + d.split(' ')[1] + ': ' + chapterObj[d]
+				var title = '레슨 ' + d.split(' ')[1] + ': ' + chapterObj[d]
 				return title
 			})
 			.on('click', function(d, i ){
@@ -183,7 +184,7 @@ var showLessonMenu = function( sentences, lessonNum ) {
 	// Add lesson title
 	content.append('h1')
 		.attr('class', 'lesson-header')
-		.text(  lessonNum.replace("lesson","제") + "과"  )
+		.text(  lessonNum.replace("lesson","레슨")  )
 
 	var gbtn = content.append('div')
 		.attr('class', "gender-btns")
@@ -259,15 +260,15 @@ var showLessonMenu = function( sentences, lessonNum ) {
 						.style("left", "97%")
 						.style("top", header_height + "px" )
 						.style("background-color","gray")
-						.style("opacity", "0.2")
+						.style("opacity", "0.7")
 						.style('display',"flex")
 						.style("justify-content","center")
 						.style("align-items","center")
 						.on('mouseover', function() {
-							d3.select(this).transition().duration(500).style('opacity','0.8')
+							d3.select(this).transition().duration(500).style('opacity','0.95')
 						})
 						.on('mouseout', function() {
-							d3.select(this).transition().duration(500).style('opacity','0.2')
+							d3.select(this).transition().duration(500).style('opacity','0.7')
 						})
 						.on('click', function() {
 							content.transition().duration(500).style("opacity", 0 )
@@ -275,6 +276,12 @@ var showLessonMenu = function( sentences, lessonNum ) {
 							content.transition().duration(500).style("opacity", 1 )
 						} )
 
+	quizButton.append("p")
+		.html("<b>퀴즈</b>")
+		.style("font-size", 20 + "px")
+		.style("position", "absolute")
+		.style( "top", "43%" )
+		.style("color", "#e50000")
 
 	quizButton.append("span")
 				.attr("class", "glyphicon glyphicon-chevron-right")
@@ -383,7 +390,7 @@ var showQuiz = function( lessonNum ) {
 	removeLessons();
 
 	var main_div = d3.select('.clearfix');
-	main_div.append("h1").text(  lessonNum.replace("lesson","제") + "과: 퀴즈"  );
+	main_div.append("h1").text(  lessonNum.replace("lesson","레슨") + " : 퀴즈"  );
 
 	// Append button back to lessons
 	var lessonButton = main_div.append("div")
@@ -394,21 +401,28 @@ var showQuiz = function( lessonNum ) {
 						.style("left", 0 )
 						.style("top", header_height + "px" )
 						.style("background-color","gray")
-						.style("opacity", "0.2")
+						.style("opacity", "0.7")
 						.style('display',"flex")
 						.style("justify-content","center")
 						.style("align-items","center")
 						.on('mouseover', function() {
-							d3.select(this).transition().style('opacity','0.8')
+							d3.select(this).transition().style('opacity','0.95')
 						})
 						.on('mouseout', function() {
-							d3.select(this).transition().style('opacity','0.2')
+							d3.select(this).transition().style('opacity','0.7')
 						})
 						.on('click', function() {
 							main_div.transition().style("opacity", 0 )
 							showLessonMenu( lessonSentences, lessonNum )
 							main_div.transition().style("opacity", 1 )
 						} );
+
+	lessonButton.append("p")
+		.html("<b>레슨</b>")
+		.style("font-size", 20 + "px")
+		.style("position", "absolute")
+		.style( "top", "43%" )
+		.style("color", "#e50000")
 
 	lessonButton.append("span")
 				.attr("class", "glyphicon glyphicon-chevron-left")
@@ -593,15 +607,15 @@ var showQuiz = function( lessonNum ) {
 	getScore( lessonNum.replace("lesson ", "lesson"), today, function(data) { 
 		console.log(data)
 						
-		d3.select(".score-right_sentences").text( "Right answers: " + data.right_sentences )
+		d3.select(".score-right_sentences").text( "맞은 문장: " + data.right_sentences )
 			.attr("data", data.right_sentences)
-		d3.select(".score-wrong_sentences").text( "Wrong answers: " + data.wrong_sentences )
+		d3.select(".score-wrong_sentences").text( "틀린 문장: " + data.wrong_sentences )
 			.attr("data", data.wrong_sentences)
-		d3.select(".score-right_words").text( "Right words: " + data.right_words )
+		d3.select(".score-right_words").text( "맞은 단어: " + data.right_words )
 			.attr("data", data.right_words)
-		d3.select(".score-wrong_words").text( "Wrong words: " + data.wrong_words )
+		d3.select(".score-wrong_words").text( "틀린 단어: " + data.wrong_words )
 			.attr("data", data.wrong_words)
-		d3.select(".replay-counts").text( "Replays: " + data.replay )
+		d3.select(".replay-counts").text( "재시도: " + data.replay )
 			.attr("data", data.replay)
 	})
 }
@@ -803,7 +817,7 @@ var showProgress = function( data ) {
 		var options = [];
 		var lessons = Object.keys(chapters[chapterNames[i]]);
 		for (var j = 0; j < lessons.length; j++ ) {
-			options.push( { "label": lessons[j].replace("lesson","제 ") + "과: " + chapters[chapterNames[i]][lessons[j]] , 
+			options.push( { "label": lessons[j].replace("lesson","레슨") + ": " + chapters[chapterNames[i]][lessons[j]] , 
 							"value": lessons[j].replace("lesson ","lesson") } )
 		}
 		optgroup.push( {"label": chapterNames[i], "children": options} )
@@ -812,7 +826,9 @@ var showProgress = function( data ) {
 		buttonClass: 'btn btn-default btn-navplot',
         enableClickableOptGroups: true,
         enableCollapsibleOptGroups: true,
-        nonSelectedText: "선택 안 됨",
+        nSelectedText: '개 레슨 선택됨',  // default: 'selected'
+        nonSelectedText: "선택 안 됨",  // default: 'none selected'
+        enableFiltering: true,
         onChange: function(option, checked){
 
         	var currTimes = $("#progress_timerange").val().split(" - ");
@@ -820,7 +836,7 @@ var showProgress = function( data ) {
         	var endTime = new Date(currTimes[1].split("/")[0] ,currTimes[1].split("/")[1]-1 ,currTimes[1].split("/")[2]).getTime()/1000
 
         	getAllScore( $('#chapter-multiple-selected').val(), [startTime, endTime], "lessons", function(data){
-	    		var data_mod = $.map( data, function( value, index) { return [{"lesson": index.replace("lesson","과 "), "score": value}] } );
+	    		var data_mod = $.map( data, function( value, index) { return [{"lesson": index.replace("lesson","레슨 "), "score": value}] } );
 	    		stackedBarChart( svg_lpp, margin_lpp, layer_lpp, data_mod )
     		})
 
@@ -831,8 +847,26 @@ var showProgress = function( data ) {
 	    		console.log("wawawa", data)
     		})*/
         }
-	});
+	} );
     $('#chapter-multiple-selected').multiselect('dataprovider', optgroup);
+
+    $(document).ready(function(){
+        var data = 'lesson1,lesson2,lesson3,lesson4,lesson5';
+        var valArr = data.split(",");
+        var i = 0, size = valArr.length;
+        for (i; i < size; i++) {
+            $('#chapter-multiple-selected').multiselect('select', valArr[i]);
+            $('#chapter-multiple-selected').trigger('onChange')
+	    }
+	    var currTimes = $("#progress_timerange").val().split(" - ");
+        	var startTime = new Date(currTimes[0].split("/")[0] ,currTimes[0].split("/")[1]-1 ,currTimes[0].split("/")[2]).getTime()/1000
+        	var endTime = new Date(currTimes[1].split("/")[0] ,currTimes[1].split("/")[1]-1 ,currTimes[1].split("/")[2]).getTime()/1000
+
+        	getAllScore( $('#chapter-multiple-selected').val(), [startTime, endTime], "lessons", function(data){
+	    		var data_mod = $.map( data, function( value, index) { return [{"lesson": index.replace("lesson","레슨 "), "score": value}] } );
+	    		stackedBarChart( svg_lpp, margin_lpp, layer_lpp, data_mod )
+    		})
+	});
 
 	$("#progress_timerange").daterangepicker({
 		startDate: moment().subtract(29, 'days'),
@@ -863,7 +897,7 @@ var showProgress = function( data ) {
 
     	getAllScore( $('#chapter-multiple-selected').val(), [startTime, endTime], "lessons", function(data){
     		//console.log(data)
-    		var data_mod = $.map( data, function( value, index) { return [{"lesson": index.replace("lesson","과 "), "score": value}] } );
+    		var data_mod = $.map( data, function( value, index) { return [{"lesson": index.replace("lesson","레슨"), "score": value}] } );
     		stackedBarChart( svg_lpp, margin_lpp, layer_lpp, data_mod )
     	})
     });
@@ -879,7 +913,7 @@ var showProgress = function( data ) {
 								.attr("class", "col-md-6")
 								.style("height", "50%")
 	col_lessonPercent.append("h4")
-		.text("과별 정답률")
+		.text("레슨별 정답률")
 
 	//https://bl.ocks.org/mbostock/3886394
 	var svg_lpp = col_lessonPercent.append("div")
@@ -921,7 +955,7 @@ var scoreTable = function ( table ) {
 	getAllScore( lesson_list , [ 0, Math.round(new Date().getTime()/1000.0) ] , "lessons", function(data){
 		//console.log(data)
 
-		var data_mod = $.map( data , function (value, index) {return [{"lesson": index.replace("lesson","제 ") + "과", 
+		var data_mod = $.map( data , function (value, index) {return [{"lesson": index.replace("lesson","레슨"), 
 			"p_sentences": (value.right_sentences + "/" + (value.right_sentences+value.wrong_sentences)) ,
 			"p_words": (value.right_words + "/" + (value.right_words + value.wrong_words)) , 
 			"replay": value.replay 	}]

@@ -590,11 +590,11 @@ app.post('/register', MongoMiddleWare( function(req,res, db){
     var passwd2=req.body.passwd2;
     var icode=req.body.icode;
     req.checkBody('email', 'Email is required').notEmpty();
-    req.checkBody('email', 'Enter a valid email').isEmail();
-    req.checkBody('firstname', 'First name is required').notEmpty();
-    req.checkBody('lastname', 'Last name is required').notEmpty();
-    req.checkBody('passwd', 'Password is required').notEmpty();
-    req.checkBody('passwd2', 'Passwords must match').equals(req.body.passwd);
+    req.checkBody('email', '이메일 정보가 올바르지 않습니다').isEmail(); // Enter a valid email
+    req.checkBody('firstname', '이름을 입력하세요').notEmpty(); // First name is required
+    req.checkBody('lastname', '성을 입력하세요').notEmpty(); // Last name is required
+    req.checkBody('passwd', '비밀번호를 입력하세요').notEmpty(); // Password is required
+    req.checkBody('passwd2', '비밀번호가 일치하지 않습니다').equals(req.body.passwd); //  Passwords must match
     req.getValidationResult().then(function(result){
         if (result.array().length > 0) {
             // Incorrect registration information. Return error messages
@@ -662,10 +662,8 @@ app.post('/login', MongoMiddleWare( function(req,res,db) {
 	    })
 }));
 
-////
-// Naver Login
-////
 
+// Naver Login
 app.post('/api/auth/naver', MongoMiddleWare( function(req,res, db){
     var email=req.body.email;
     var emailCRC=req.body.emailCRC;
