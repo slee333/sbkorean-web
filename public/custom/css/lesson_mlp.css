@@ -145,3 +145,7 @@ CSS for buttons
 	font-weight: bold;
 	font-size: 15pt;
 }
+
+.gender-btns > button {
+	margin-right: 10pt;
+}

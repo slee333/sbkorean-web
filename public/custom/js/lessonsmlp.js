@@ -135,6 +135,7 @@ var build_sublists = function( divid, data ){
 		d3.select('#chap'+(ch+1)).append('ul').selectAll('li')
 			.data( Object.keys( chapterObj ) ).enter()
 			.append('li').append('a')
+			.attr('class','icon icon-pen')
 			.attr('href', '#')
 			.html( function(d,i) { 
 				var title = '레슨 ' + d.split(' ')[1] + ': ' + chapterObj[d]
@@ -209,7 +210,8 @@ var showLessonMenu = function( sentences, lessonNum ) {
 		.append('button')
 		.attr('class', "button set-button button-circle button-highlight button-large")
 		.attr('setNum', function(d,i) { return (i+1) })
-		.html(function(d,i) { return 'Set ' + (i + 1) })
+		.html(function(d,i) { return '세트' + (i + 1) }) // Set Number
+		.style("font-size","12pt")
 		.on('click', function( d, i ) {
 			// Disselect all
 			d3.selectAll('.set-button').classed('button-selected', false)
@@ -426,7 +428,7 @@ var showQuiz = function( lessonNum ) {
 							if ($(".repeat-button").length){
 								console.log("repeat clicked")
 								var repeat_counts=  Number(d3.select(".replay-counts").attr("data")) + 1 ;
-								d3.select(".replay-counts").text( "Replays: " + repeat_counts )
+								d3.select(".replay-counts").text( "재시도 횟수: " + repeat_counts )
 									.attr("data", repeat_counts)
 								recordScore( lessonNum.replace("lesson ", "lesson"), today, 
 									d3.select(".score-right_sentences").attr("data") ,  d3.select(".score-wrong_sentences").attr("data"), 
@@ -511,9 +513,9 @@ var showQuiz = function( lessonNum ) {
 		
 		var right_words = Number(d3.select(".score-right_words").attr("data")) + right_words;
 		var wrong_words = Number(d3.select(".score-wrong_words").attr("data")) + wrong_words;
-		d3.select(".score-right_words").text( "Right words: " + right_words )
+		d3.select(".score-right_words").text( "맞은 단어: " + right_words )
 				.attr("data", right_words)
-		d3.select(".score-wrong_words").text( "Wrong words: " + wrong_words )
+		d3.select(".score-wrong_words").text( "틀린 단어: " + wrong_words )
 				.attr("data", wrong_words)
 
 		// Score sentence to sentence
@@ -528,11 +530,11 @@ var showQuiz = function( lessonNum ) {
 		// Where the scoring algorithm kicks in
 		if (original_ == answer_) {
 			var right_sentences = Number(d3.select(".score-right_sentences").attr("data")) + 1;
-			d3.select(".score-right_sentences").text( "Right answers: " + right_sentences )
+			d3.select(".score-right_sentences").text( "맞은 문장: " + right_sentences )
 				.attr("data", right_sentences)
 		} else {
 			var wrong_sentences = Number(d3.select(".score-wrong_sentences").attr("data")) + 1;
-			d3.select(".score-wrong_sentences").text( "Wrong answers: " + wrong_sentences )
+			d3.select(".score-wrong_sentences").text( "틀린 문장: " + wrong_sentences )
 				.attr("data", wrong_sentences)
 		}
 
@@ -591,7 +593,7 @@ var showQuiz = function( lessonNum ) {
 			.attr("data", data.right_words)
 		d3.select(".score-wrong_words").text( "틀린 단어: " + data.wrong_words )
 			.attr("data", data.wrong_words)
-		d3.select(".replay-counts").text( "재시도: " + data.replay )
+		d3.select(".replay-counts").text( "재시도 횟수: " + data.replay )
 			.attr("data", data.replay)
 	})
 }
@@ -803,7 +805,8 @@ var showProgress = function( data ) {
         enableClickableOptGroups: true,
         enableCollapsibleOptGroups: true,
         nSelectedText: '개 레슨 선택됨',  // default: 'selected'
-        nonSelectedText: "선택 안 됨",  // default: 'none selected'
+        nonSelectedText: "선택된 레슨 없음",  // default: 'none selected'
+        filterPlaceholder: "검색할 단어 입력",
         enableFiltering: true,
         onChange: function(option, checked){
 

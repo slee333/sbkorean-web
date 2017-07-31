@@ -14,7 +14,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
     
     <!-- Google API -->
-    <script src="https://apis.google.com/js/platform.js" async defer></script>
     <meta name="google-signin-client_id" content="460158204141-aclb43a70l448iehp8s2u1u2c25f8dt7.apps.googleusercontent.com">
     
     <!-- Naver log-in -->
@@ -33,6 +32,16 @@
         bottom:0;
         font-size: 9pt;
         color: gray;
+      }
+
+      .g-signin2{
+        width: 50%;
+        float: left;
+      }
+
+      .g-signin2 > div{
+        margin: 0 auto;
+        width: 100%;
       }
 
     </style>
@@ -81,10 +90,13 @@
 
                                     <!-- Sign-in Buttons -->
                                     <div class="col-sm-12 controls">
-                                       <button id="btn-login" type="button" onClick="standardLogin()" class="btn btn-info"><i class="icon-hand-right"></i>Login</button>
+                                       <button id="btn-login" type="button" onClick="standardLogin()" class="btn btn-info" style="width:100%;"><i class="icon-hand-right"></i>로그인</button>
 
+                                       <div style="margin-top: 5px; margin-bottom: 5px; text-align: center; border-top: 1px solid#888; padding-top:15px; font-size:85%" >
+                                       혹은 간편하게 로그인 하세요
+                                       </div>
                                       <!--<a id="btn-login" href="#" class="btn btn-success">Login  </a>-->
-                                      <div href = "#" class="g-signin2" data-onsuccess="onSignIn"></div>
+                                      <div href = "#" class="g-signin2" id="g-signin2" data-onsuccess="onSignIn" ></div>
                                       <div id="naver_id_login"></div>
 
                                     </div>
@@ -244,6 +256,19 @@
 
         }
 
+        function renderButton() {
+            gapi.signin2.render('g-signin2', {
+                'scope': 'profile email',
+                'width': "100%",
+                'onsuccess': onSignIn,
+                "onfailure": function(error){
+                    console.log(error)
+                }
+            });
+            $(".abcRioButton").width("90%")
+            $(".abcRioButton").css("margin", "auto")
+        }
+
         function standardRegister(req,res) {
             var email = document.getElementsByName("email")[0].value;
             var emailCRC = crc32(email);
@@ -315,8 +340,10 @@
 		}
 
 	    }
-	}
+	}  
+
     </script>
+    <script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>
     <!-- JS for Naver Log-in -->
     <script type="text/javascript">
 
