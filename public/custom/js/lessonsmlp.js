@@ -6,29 +6,6 @@
 //Any better/faster way to do this? Need to think..
 //Load Lesson data and create submenus
 
-var QueryString = function () {
-  // This function is anonymous, is executed immediately and 
-  // the return value is assigned to QueryString!
-  var query_string = {};
-  var query = window.location.search.substring(1);
-  var vars = query.split("&");
-  for (var i=0;i<vars.length;i++) {
-    var pair = vars[i].split("=");
-        // If first entry with this name
-    if (typeof query_string[pair[0]] === "undefined") {
-      query_string[pair[0]] = decodeURIComponent(pair[1]);
-        // If second entry with this name
-    } else if (typeof query_string[pair[0]] === "string") {
-      var arr = [ query_string[pair[0]],decodeURIComponent(pair[1]) ];
-      query_string[pair[0]] = arr;
-        // If third or later entry with this name
-    } else {
-      query_string[pair[0]].push(decodeURIComponent(pair[1]));
-    }
-  } 
-  return query_string;
-}();
-
 var load_jsonData = function(filename, callback) {
 	$.ajax({
 	url: "/api/lessonData",
@@ -53,8 +30,8 @@ var initClient = function() {
 				success: function( data ){
 					
 					console.log(data.msg);
-					
-					load_jsonData( "Korean_lessons.json", function(data){
+					var lang = QueryString['lang'] || 'eng'; // default value: English
+					load_jsonData( "/lang/"+ lang +"/lessons.json", function(data){
 						showAbout();
 						console.log("Data Loaded");
 						build_sublists('lesson-list', data);
@@ -92,6 +69,12 @@ String.prototype.replaceAll = function(search, replacement) {
 // Setup global variable audioContext
 window.AudioContext = window.AudioContext||window.webkitAudioContext;
 var audioContext = new AudioContext();
+var audioBgContext = new AudioContext(); // audioContext for background noise
+
+var bgGainNode = audioBgContext.createGain();
+localStorage.setItem("noiselvl","0")
+bgGainNode.gain.value = Number(localStorage.noiselvl);
+bgGainNode.connect(audioBgContext.destination);
 
 //////////////////// Layout /////////////////////////////*****
 
@@ -163,8 +146,14 @@ var showLessonMenu = function( sentences, lessonNum ) {
 		.attr('class', 'lesson-header')
 		.text(  lessonNum.replace("lesson","레슨")  )
 
-	var gbtn = content.append('div')
-		.attr('class', "gender-btns")
+	// Add row
+
+	var btn_panel = content.append("div")
+		.attr("class","row")
+		.attr("id","button-panel")
+
+	var gbtn = btn_panel.append('div')
+		.attr('class', "gender-btns col-md-3")
 	
 	// Male Button
 	gbtn.append('button')
@@ -190,8 +179,54 @@ var showLessonMenu = function( sentences, lessonNum ) {
 			d3.select(this).classed('button-selected', true)
 		})
 
-	var sbtn = content.append('div')
-		.attr('class', "set-btns")
+
+	var noiseDiv = btn_panel.append("div")
+		.attr("class","col-md-4 well")
+		.style("margin", "0")
+		.style("background-color","white")
+		.style("border","none")
+		.style("-webkit-box-shadow","none")
+		.style("box-shadow","none")
+	// Where white noise tab comes in
+
+	noiseDiv.append("div")
+		.attr("class","col-md-3")
+		.html("잡음 수치: ") // Noise Level:
+
+	noise_slider = noiseDiv.append("input")
+		.attr("id", "noise-bar")
+		.attr("type","text")
+		.attr("data-slider-id","noiseBar");
+
+	noiseDiv.append("span")
+		.attr("id","noise-bar-label")
+		.style("padding-left","30px")
+		.html("현 수치: ") // Current value
+		.append("span")
+			.attr("id","noise-bar-val")
+
+	$("#noise-bar-val").text("0")
+	$("#noise-bar").slider({
+		id: "noise-slider",
+		tooltip: "always",
+		min: 0,
+		max: 100,
+		value: Number(localStorage.noiselvl)*100
+	});
+
+	bgGainNode.gain.value = Number(localStorage.noiselvl)
+
+	$("#noise-bar").on("change", function(slideEvt){
+
+		$("#noise-bar-val").text(slideEvt.value.newValue)	
+		bgGainNode.gain.value = Number(slideEvt.value.newValue) / 100; 
+		localStorage.setItem("noiselvl", Number(slideEvt.value.newValue) / 100 )
+	})
+
+	// Set buttons
+	var sbtn = btn_panel.append('div')
+		.attr('class', "set-btns col-md-5")
+		.style("text-align", "center")
 
 	var svg = content.append('svg')
 				.style('height', '80%')
@@ -296,7 +331,7 @@ var showLessonMenu = function( sentences, lessonNum ) {
 				d3.select(this).style('fill','#fcd549')
 			})
 			.on('click', function(d, i) {
-				loadSoundFile( sentences[i], d3.select(".gender-button.button-selected").attr('gender') , lessonNum )
+				loadLessonFile( sentences[i], d3.select(".gender-button.button-selected").attr('gender') , lessonNum )
 			})
 
 		textBox.append('text')
@@ -306,7 +341,7 @@ var showLessonMenu = function( sentences, lessonNum ) {
 			.attr('text-anchor',"middle")
 			.text(function(d,i) { return sentences[i] })
 			.on('click', function(d, i) {
-				loadSoundFile( sentences[i], d3.select(".gender-button.button-selected").attr('gender') , lessonNum ) 
+				loadLessonFile( sentences[i], d3.select(".gender-button.button-selected").attr('gender') , lessonNum ) 
 			})
 			.on('mouseover', function(d, i) {
 				d3.select( d3.selectAll('rect')[0][i] ).style('fill','#edc01e')
@@ -333,6 +368,7 @@ var getScore = function ( lessonNum, timestamp, callback) {
 		success: function(data){ callback(data) },
 		error: function(err) {
 			console.log(err)
+			window.location = err.responseJSON.redirect;
 		}
 	})
 }
@@ -357,8 +393,176 @@ var recordScore = function ( lessonNumber, timestamp, right_sentences, wrong_sen
 		},
 		error: function(err) {
 			console.error(err)
+			window.location = err.responseJSON.redirect;
 		}
 	})
+}
+
+var showProfile = function () {
+	/*
+
+	Function to show profile page.
+	Content of profile page: needs discussion with Tilak. Include PW, etc?
+
+	*/
+
+	removeLessons();
+
+	var email = readCookie("sb_email");
+	var secret = readCookie("sb_secret");
+
+	$.ajax({
+		type:"get",
+		url:"/api/client_match",
+		data: { "SBUserId": QueryString["userId"], "email": email, "emailCRC": crc32(email), "secret": secret },
+		success: function( data ){
+			
+			var main_div = d3.select(".clearfix");
+				main_div.append("h1")
+					.html("<b>회원 정보</b>"); // Profile Page
+
+			var division = main_div.append('div')
+								.style('width', "100%")
+								.style('height', "4px")
+								.style('background-color', "#ffc526")
+
+			var profileMenu = main_div.append("div")
+								.attr("class","profile-content")
+								.style("margin-top","20px")
+
+			var profileEmail = profileMenu.append("div")
+								.attr("id","profile-info-email")
+								.attr("class", "profile-menu col-md-12")
+
+			profileEmail.append("div").attr("class","col-md-3").html("이메일"); //email
+			profileEmail.append("div").attr("class","col-md-9").html( readCookie("sb_email") )
+
+			// show services user's using.
+			// allow password change
+
+			var profileService = profileMenu.append("div")
+									.attr("id","profile-info-service")
+									.attr("class", "profile-menu col-md-12");
+
+			profileService.append("div").attr("class","col-md-3").html("사용중인 서비스"); // service in use
+			profileService.append("div").attr("class","col-md-9").html( data.accountServices )
+
+			// Append the part that showsp service information
+
+			if (data.accountServices == "Standard"){
+				var profilePassword= profileMenu.append("div")
+										.attr("id","profile-info-password")
+										.attr("class", "profile-menu col-md-12");
+
+				profilePassword.append("div").attr("class","col-md-3").html("비밀번호"); // Change password
+				profilePassword.append("div").attr("class","col-md-9")
+									.append( "button" )
+										.attr("class", "btn btn-secondary")
+										.attr("id","pwChangeBtn")
+										.text("비밀번호 변경")
+
+				var changePassword = profileMenu.append("div")
+									.attr("id", "profile-change-password")
+									.attr("class", "reset-password col-md-12 well");
+
+
+				var cpwRow = changePassword.append("div").attr("class", "profile-menu row");
+
+				cpwRow.append("div").attr("class","col-md-2").html("현 비밀번호"); // Current Password
+				cpwRow.append("div").attr("class","col-md-2")
+									.append( "input" )
+										.attr("class", "form-control")
+										.attr("id","currPW")
+										.attr("type","password");
+
+				cpwRow.append("div").attr("class","col-md-2").html("비밀번호 재입력"); // Current Password (repeat)
+				cpwRow.append("div").attr("class","col-md-2")
+									.append( "input" )
+										.attr("class", "form-control")
+										.attr("id","currPW_r")
+										.attr("type","password");
+
+				cpwRow.append("div").attr("class","col-md-2").html("새 비밀번호"); // Change password
+				cpwRow.append("div").attr("class","col-md-2")
+									.append( "input" )
+										.attr("class", "form-control")
+										.attr("id","newPW")
+										.attr("type","password");
+
+				changePassword.append("div").attr("class","row")
+						.append("div").attr("class","col-md-12")
+						.append("button").attr("class", "btn btn-primary center-block")
+									.attr("id","btn-change-pw")
+									.text("비밀번호 변경하기")
+									.style("width", "80%")
+
+
+				d3.select("#pwChangeBtn")
+					.on("click", function() {
+						$(".reset-password").toggle();
+
+					})
+
+				d3.select("#btn-change-pw").on("click", function(){
+					var currPW = $("#currPW").val();
+					var currPW_r = $("#currPW_r").val();
+					var newPW = $("#newPW").val();
+
+					if ( email != null){
+						if (secret != null ) {
+
+							$.ajax({
+								type:"get",
+								url:"/api/client_match",
+								data: { "SBUserId": QueryString["userId"], "email": email, "emailCRC": crc32(email), "secret": secret },
+								success: function( data ){
+									
+									// Client successfully matches
+
+								}, error: function( err ){
+									window.location = err.responseJSON.redirect;
+									console.log(err);
+								},
+								complete: function(){
+									$.ajax({
+										type: "post",
+										url: "/login/reset",
+										data: { "currPW": currPW, "currPW_r": currPW_r, "newPW": newPW, "emailCRC": crc32(email)  },
+										success: function(data2) {
+											window.location = "/lessons?userId=" + QueryString["userId"];
+											alert("password resetted")
+										},
+										error: function(err2) {
+											// Handle errors here
+												
+											console.log(err2)
+											alert(err2.responseJSON.msg)
+										}
+									});
+								}
+							});
+
+						} else {
+							window.location = "/"
+							console.log( "Not enough information to verify user. Please retry" )
+						}
+					} else {
+						window.location = "/"
+						console.log( "Not enough information to verify user. Please retry" )
+					}
+
+
+
+				})
+			}
+
+		}, error: function( err ){
+			window.location = err.responseJSON.redirect;
+			console.log(err);
+		}
+	});
+
+
 }
 
 var showQuiz = function( lessonNum ) {
@@ -369,6 +573,55 @@ var showQuiz = function( lessonNum ) {
 
 	var main_div = d3.select('.clearfix');
 	main_div.append("h1").text(  lessonNum.replace("lesson","레슨") + " : 퀴즈"  );
+
+	var toolbar = main_div.append("div")
+		.attr("class","row")
+
+	var placeholder_left = toolbar.append("div")
+		.attr("class","col-md-3")
+
+	var noiseDiv = toolbar.append("div")
+		.attr("class","col-md-4 well")
+		.style("margin", "0")
+		.style("background-color","white")
+		.style("border","none")
+		.style("-webkit-box-shadow","none")
+		.style("box-shadow","none")
+	// Where white noise tab comes in
+
+	noiseDiv.append("div")
+		.attr("class","col-md-3")
+		.html("잡음 수치: ") // Noise Level:
+
+	noise_slider = noiseDiv.append("input")
+		.attr("id", "noise-bar")
+		.attr("type","text")
+		.attr("data-slider-id","noiseBar");
+
+	noiseDiv.append("span")
+		.attr("id","noise-bar-label")
+		.style("padding-left","30px")
+		.html("현 수치: ") // Current value
+		.append("span")
+			.attr("id","noise-bar-val")
+
+	$("#noise-bar-val").text("0")
+	$("#noise-bar").slider({
+		id: "noise-slider",
+		tooltip: "always",
+		min: 0,
+		max: 100,
+		value: Number(localStorage.noiselvl)*100
+	});
+
+	bgGainNode.gain.value = Number(localStorage.noiselvl)
+	
+	$("#noise-bar").on("change", function(slideEvt){
+
+		$("#noise-bar-val").text(slideEvt.value.newValue)	
+		bgGainNode.gain.value = Number(slideEvt.value.newValue) / 100; 
+		localStorage.setItem("noiselvl", Number(slideEvt.value.newValue) / 100 )
+	})
 
 	// Append button back to lessons
 	var lessonButton = main_div.append("div")
@@ -412,7 +665,7 @@ var showQuiz = function( lessonNum ) {
 						.style("text-align", "center");
 
 	// Add another div element for padding. This is because we cannot set "padding" based on height or width of the parent element. So annoying.
-	input_div.append("div").style("height", "15%").attr('class',"div-padding");
+	input_div.append("div").style("height", "5%").attr('class',"div-padding");
 
 	// Setup. Start the random number.
 	var seed = Math.floor(Math.random() * lessonSentences.length );
@@ -423,7 +676,7 @@ var showQuiz = function( lessonNum ) {
 						.style("font-size", 100+"px")
 						.style("color", "#ffc526")
 						.on("click", function() {
-							loadSoundFile( lessonSentences[seed], gender, lessonNum );
+							loadLessonFile( lessonSentences[seed], gender, lessonNum );
 
 							if ($(".repeat-button").length){
 								console.log("repeat clicked")
@@ -599,7 +852,8 @@ var showQuiz = function( lessonNum ) {
 }
 
 var showAbout = function( ) {
-	load_jsonData("Korean_pages.json", function(data){
+	var lang = QueryString['lang'] || 'eng';
+	load_jsonData( "/lang/"+ lang +"/pages.json", function(data){
 		var content = data.about;
 		removeLessons()
 
@@ -629,7 +883,8 @@ var showAbout = function( ) {
 };
 
 var showInstruction = function( ) {
-	load_jsonData( "Korean_pages.json", function(data){
+	var lang = QueryString['lang'] || 'eng';
+	load_jsonData( "/lang/" + lang + "/pages.json", function(data){
 		var content= data.instruction;
 		removeLessons()
 
@@ -671,6 +926,7 @@ var getAllScore = function ( lessonNums, timeRange, keys, callback ) {
 		},
 		error: function(err) {
 			console.log(err)
+			window.location = err.responseJSON.redirect;
 		}
 	})
 }
@@ -970,7 +1226,7 @@ var stackedBarChart = function( svg, margin, layer, data ) {
 
 	// Define tooltip menu
     var tooltip = d3.select( svg.node().parentNode ).append("div")
-					.attr("class", "tooltip tooltip-lpp")
+					.attr("class", "tooltip-barChart tooltip-lpp")
 	        		.style("opacity", 0);
 
 	var width = Number(  svg.style("width").replace("px","")  ) - margin.left - margin.right;
@@ -1064,54 +1320,104 @@ var removeLessons = function() {
 		//$( node.lastChild ).fadeOut(300, function() { $(this).remove(); })
     	node.removeChild(node.lastChild);
 	}
+
+	// Reset background gain node to 0
+	bgGainNode.gain.value = 0;
+
 }
 
-var loadSoundFile = function( sentenceString, gender, lessonNum ) {
+// From: http://www.willvillanueva.com/the-web-audio-api-from-nodeexpress-to-your-browser/
 
-	sentenceString = sentenceString.replaceAll(',','')
-	sentenceString = sentenceString.replaceAll('!','')
-	sentenceString = sentenceString.replaceAll('?','')
-	sentenceString = sentenceString.replaceAll('.','')
-	sentenceString = sentenceString.replaceAll('~','')
-	sentenceString = sentenceString.replaceAll('‘','')
-	sentenceString = sentenceString.replaceAll('’','')
-	sentenceString = sentenceString.replaceAll("'",'')
+function loadSound( context, lessonname, filename, parms ) {
+
+	if (parms) {
+		var gain = parms.gain;
+		var loop = parms.loop;
+	}
+
+	var request = new XMLHttpRequest();
+	request.open("GET", "/api/soundData?lesson=" + lessonname + "&fileName=" + filename, true); 
+	request.responseType = "arraybuffer";
+
+	request.onload = function() {
+	    var Data = request.response;
+	    if (gain) {
+	    	process( Data, context, parms)
+	    } else {
+	    	process(Data, context);	
+	    }
+	    
+	};
+
+	request.send();
+ }
+
+function process(Data, context, parms) {
+
+	if (parms) {
+		var gain = parms.gain;
+		var loop = parms.loop;
+	}
+
+  	source = context.createBufferSource(); // Create Sound Source
+
+	context.decodeAudioData(Data, function(buffer){
+   		source.buffer = buffer;
+
+   		if (gain) {
+   			source.connect(gain); 
+   		} else {
+   			source.connect(context.destination); 
+   		}
+
+   		source.start(context.currentTime);
+   		if (loop) {
+   			source.loop = true;
+   		}
+	})
+}
+
+var loadLessonFile = function( sentenceString, gender, lessonNum ) {
+
+	sentenceString = sentenceString.replaceAll(',','');
+	sentenceString = sentenceString.replaceAll('!','');
+	sentenceString = sentenceString.replaceAll('?','');
+	sentenceString = sentenceString.replaceAll('.','');
+	sentenceString = sentenceString.replaceAll('~','');
+	sentenceString = sentenceString.replaceAll('‘','');
+	sentenceString = sentenceString.replaceAll('’','');
+	sentenceString = sentenceString.replaceAll("'",'');
 
 	var filename = sentenceString + "_" + gender +".wav";
 	var lessonname = lessonNum.replace(' ', '') // d3.select('.lesson-header').text().toLowerCase().replace(' ','');
 
-
-	// From: http://www.willvillanueva.com/the-web-audio-api-from-nodeexpress-to-your-browser/
-
-	function loadSound( context ) {
-		var request = new XMLHttpRequest();
-		request.open("GET", "/api/soundData?lesson=" + lessonname + "&fileName=" + filename, true); 
-		request.responseType = "arraybuffer";
-
-		request.onload = function() {
-		    var Data = request.response;
-		    process(Data, context);
-		};
-
-		request.send();
-	 }
-
-	function process(Data, context) {
-	  	source = context.createBufferSource(); // Create Sound Source
-	  	context.decodeAudioData(Data, function(buffer){
-	   		source.buffer = buffer;
-	   		source.connect(context.destination); 
-	   		source.start(context.currentTime);
-
-	})}
-
-	loadSound(audioContext) // Using global variable audioContext defined at initialization
+	loadSound(audioContext, lessonname, filename ) // Using global variable audioContext defined at initialization
 
 }
 
+var loadBackgroundNoise = function(){
+
+	var parms = {
+		gain: bgGainNode,
+		loop: true
+	}
+
+	// Can do this every 10 seconds, or...
+	loadSound(audioBgContext, "misc", "whitenoisegaussian.wav", parms)
+}(); // Load background noise file from beginning
+
 // When menu buttons are clicked:
+
+$("#profile-page").on("click", function(){
+	showProfile();
+
+	// Close Menu
+	d3.select('#mp-pusher').classed("mp-pushed", false)
+	d3.select('#mp-pusher').style("transform", 'translate3d(0,0,0)')
+})
+
 $('#about-page').on('click', function(){ 
-	showAbout()
+	showAbout();
 
 	// Close Menu
 	d3.select('#mp-pusher').classed("mp-pushed", false)
@@ -1119,7 +1425,7 @@ $('#about-page').on('click', function(){
 });
 
 $('#instruction-page').on('click', function(){ 
-	showInstruction()
+	showInstruction();
 
 	// Close Menu
 	d3.select('#mp-pusher').classed("mp-pushed", false)
@@ -1127,9 +1433,9 @@ $('#instruction-page').on('click', function(){
 });
 
 $('#progress-page').on('click', function(){ 
-
-	load_jsonData( "Korean_lessons.json", function(data){
-		showProgress(data)
+	var lang = QueryString['lang'] || 'eng';
+	load_jsonData( "/lang/" + lang + "/lessons.json", function(data){
+		showProgress(data);
  	});
 
 	// Close Menu

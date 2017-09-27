@@ -57,14 +57,8 @@ a {
 CSS for buttons
 */
 
-.gender-btns {
-	width: 50%;
-	float: left;
-}
-
-.set-btns {
-	width: 30%;
-	float: right;
+#noise-slider > .slider-track > .slider-selection {
+	background: gray;
 }
 
 .set-btns > button {
@@ -128,7 +122,7 @@ CSS for buttons
   shape-rendering: crispEdges;
 }
 
-.tooltip {
+.tooltip-barChart {
 	position: absolute;     
     text-align: center;            
     padding: 5px;
@@ -141,11 +135,20 @@ CSS for buttons
 
 .menu-text {
 	position: absolute;
-	top: 10%;
+	top: 80px;
 	font-weight: bold;
 	font-size: 15pt;
 }
 
 .gender-btns > button {
 	margin-right: 10pt;
+}
+
+.profile-menu {
+	padding-top: 15px;
+	padding-bottom: 15px;
+}
+
+.reset-password {
+	display: none;
 }
